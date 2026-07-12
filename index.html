@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Old Kennedy — Market Day</title>
+<style>
+  :root {
+    --navy:       #023863;
+    --navy-dark:  #012847;
+    --navy-mid:   #0A4F80;
+    --gold:       #C9933A;
+    --gold-light: #F5E6C8;
+    --white:      #FFFFFF;
+    --off-white:  #F7F9FC;
+    --ink:        #023863;
+    --ink-mid:    #3A6080;
+    --ink-light:  #7A9BB5;
+    --border:     #C2D4E3;
+    --success:    #1B5E35;
+    --success-bg: #D4EDBC;
+    --warn-bg:    #FFF3CD;
+    --warn-text:  #7B3F00;
+    --red:        #B71C1C;
+    --red-light:  #FDECEA;
+    --radius:     14px;
+    --radius-sm:  10px;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--white); color:var(--ink); min-height:100vh; padding-bottom:48px; }
+
+  /* ── HEADER ─────────────────────────────────────────────────────────────── */
+  .app-header { background:var(--navy); padding:16px 20px 14px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; border-bottom:3px solid var(--gold); }
+  .brand-name { font-size:18px; font-weight:800; color:var(--white); letter-spacing:.01em; }
+  .brand-sub  { font-size:11px; color:var(--gold-light); letter-spacing:.08em; text-transform:uppercase; margin-top:2px; }
+  .mode-badge { font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; background:var(--gold); color:var(--navy); padding:5px 12px; border-radius:20px; }
+
+  /* ── TABS ────────────────────────────────────────────────────────────────── */
+  .mode-tabs { display:flex; background:var(--navy-dark); padding:0 20px 14px; gap:10px; }
+  .mode-tab  { flex:1; padding:12px 8px; border:2px solid rgba(255,255,255,.2); border-radius:var(--radius-sm); font-size:14px; font-weight:700; cursor:pointer; background:transparent; color:rgba(255,255,255,.6); -webkit-tap-highlight-color:transparent; transition:all .15s; }
+  .mode-tab.active { background:var(--white); color:var(--navy); border-color:var(--white); }
+
+  /* ── SCREENS ─────────────────────────────────────────────────────────────── */
+  .screen { display:none; padding:16px; }
+  .screen.active { display:block; }
+
+  /* ── CARDS ───────────────────────────────────────────────────────────────── */
+  .card { background:var(--white); border-radius:var(--radius); border:2px solid var(--border); margin-bottom:14px; overflow:hidden; }
+  .card-header { background:var(--navy); color:var(--white); padding:12px 16px; font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+  .card-header.gold { background:var(--gold); color:var(--navy); }
+  .card-body { padding:16px; }
+
+  /* ── FORM FIELDS ─────────────────────────────────────────────────────────── */
+  .field { margin-bottom:14px; }
+  .field:last-child { margin-bottom:0; }
+  label { display:block; font-size:12px; font-weight:800; color:var(--ink-mid); letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; }
+  input[type="number"],input[type="text"],select,textarea {
+    width:100%; padding:14px 16px; border:2px solid var(--border); border-radius:var(--radius-sm);
+    font-size:18px; font-weight:600; color:var(--navy); background:var(--white);
+    appearance:none; -webkit-appearance:none; outline:none; transition:border-color .15s;
+  }
+  input:focus,select:focus { border-color:var(--navy); }
+  .input-prefix { position:relative; }
+  .input-prefix span { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:18px; font-weight:600; color:var(--ink-light); pointer-events:none; }
+  .input-prefix input { padding-left:30px; }
+
+  /* ── TALLY GRID ──────────────────────────────────────────────────────────── */
+  .tally-grid   { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .tally-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  .tally-item {
+    background:var(--white); border:2px solid var(--border); border-radius:var(--radius);
+    padding:20px 12px 16px; text-align:center; display:flex; flex-direction:column;
+    align-items:center; gap:8px; transition:border-color .2s, box-shadow .2s;
+  }
+  .tally-item.has-pending { border-color:var(--navy); box-shadow:0 0 0 3px rgba(2,56,99,.12); background:var(--off-white); }
+  .tally-emoji   { font-size:34px; }
+  .tally-label   { font-size:12px; font-weight:800; color:var(--navy); letter-spacing:.05em; text-transform:uppercase; line-height:1.3; }
+  .tally-pending { font-size:52px; font-weight:800; color:var(--navy); line-height:1; min-height:60px; display:flex; align-items:center; justify-content:center; font-variant-numeric:tabular-nums; transition:color .15s; }
+  .tally-pending.active { color:var(--gold); }
+  .tally-running { font-size:12px; font-weight:600; color:var(--ink-light); }
+  .tally-controls { display:flex; align-items:center; gap:12px; margin-top:4px; }
+  .tally-btn { width:46px; height:46px; border-radius:50%; border:none; font-size:24px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform .1s; -webkit-tap-highlight-color:transparent; }
+  .tally-btn:active { transform:scale(.88); }
+  .tally-btn.plus  { background:var(--navy); color:var(--white); width:58px; height:58px; font-size:30px; }
+  .tally-btn.minus { background:var(--off-white); color:var(--navy); border:2px solid var(--border); }
+
+  /* ── PENDING / CONFIRM ───────────────────────────────────────────────────── */
+  .pending-label     { font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-light); margin-bottom:8px; }
+  .pending-items     { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:4px; }
+  .pending-chip      { background:var(--navy); color:var(--white); border-radius:20px; padding:6px 14px; font-size:14px; font-weight:700; }
+  .order-total-display { text-align:center; padding:14px 0 6px; }
+  .order-total-label   { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-light); margin-bottom:6px; }
+  .order-total-amount  { font-size:48px; font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums; }
+
+  /* ── SWIPE ───────────────────────────────────────────────────────────────── */
+  .swipe-track  { position:relative; background:var(--off-white); border:2px solid var(--border); border-radius:50px; height:66px; overflow:hidden; cursor:pointer; user-select:none; -webkit-user-select:none; margin-top:12px; }
+  .swipe-fill   { position:absolute; left:0; top:0; bottom:0; background:var(--navy); border-radius:50px; width:66px; }
+  .swipe-thumb  { position:absolute; left:4px; top:4px; bottom:4px; width:58px; background:var(--white); border-radius:50px; display:flex; align-items:center; justify-content:center; color:var(--navy); font-size:24px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,.15); }
+  .swipe-label  { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:var(--navy); letter-spacing:.02em; pointer-events:none; padding-left:70px; }
+  .swipe-label.confirmed { color:var(--success); }
+
+  /* ── PAYMENT PANEL ───────────────────────────────────────────────────────── */
+  .payment-panel { display:none; }
+  .payment-header { text-align:center; padding:8px 0 18px; border-bottom:2px solid var(--border); margin-bottom:16px; }
+  .payment-header .ph-label  { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-light); margin-bottom:8px; }
+  .payment-header .ph-amount { font-size:52px; font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums; }
+  .payment-btns { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:18px; }
+  .pay-btn { padding:16px 8px; border:2px solid var(--border); border-radius:var(--radius); background:var(--white); cursor:pointer; text-align:center; font-size:14px; font-weight:700; color:var(--ink-mid); -webkit-tap-highlight-color:transparent; transition:all .15s; }
+  .pay-btn:active { transform:scale(.96); }
+  .pay-btn .pay-icon { font-size:28px; display:block; margin-bottom:6px; }
+  .pay-btn.selected { border-color:var(--navy); background:var(--navy); color:var(--white); }
+
+  /* ── CASH ────────────────────────────────────────────────────────────────── */
+  .cash-flow { display:none; }
+  .change-display { background:var(--success-bg); border:2px solid var(--success); border-radius:var(--radius); padding:18px; text-align:center; margin-top:14px; }
+  .change-label  { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--success); margin-bottom:6px; }
+  .change-amount { font-size:44px; font-weight:800; color:var(--success); font-variant-numeric:tabular-nums; }
+  .change-owing  { background:var(--red-light); border:2px solid var(--red); border-radius:var(--radius); padding:18px; text-align:center; margin-top:14px; display:none; }
+  .change-owing .change-label  { color:var(--red); }
+  .change-owing .change-amount { color:var(--red); font-size:32px; }
+
+  /* ── EMT ─────────────────────────────────────────────────────────────────── */
+  .emt-flow { display:none; }
+  .emt-box  { background:var(--off-white); border:2px solid var(--navy); border-radius:var(--radius); padding:20px; text-align:center; }
+  .emt-label  { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-mid); margin-bottom:10px; }
+  .emt-amount { font-size:36px; font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums; margin-bottom:14px; }
+  .emt-email  { font-size:22px; font-weight:800; color:var(--navy); word-break:break-all; letter-spacing:.01em; }
+
+  /* ── SQUARE ──────────────────────────────────────────────────────────────── */
+  .square-flow { display:none; }
+  .square-box  { background:var(--navy); border-radius:var(--radius); padding:22px; text-align:center; }
+  .square-logo   { font-size:40px; margin-bottom:8px; }
+  .square-amount { font-size:44px; font-weight:800; color:var(--white); font-variant-numeric:tabular-nums; margin-bottom:4px; }
+  .square-label  { font-size:14px; color:rgba(255,255,255,.75); margin-bottom:0; line-height:1.5; }
+  .square-btn    { display:block; width:100%; padding:16px; background:var(--gold); color:var(--navy); border:none; border-radius:var(--radius-sm); font-size:16px; font-weight:800; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+
+  /* ── NEW TXN ─────────────────────────────────────────────────────────────── */
+  .new-txn-btn { width:100%; padding:16px; border:2px solid var(--navy); background:none; color:var(--navy); border-radius:var(--radius); font-size:16px; font-weight:700; cursor:pointer; margin-top:14px; -webkit-tap-highlight-color:transparent; }
+
+  /* ── TILL TABLE ──────────────────────────────────────────────────────────── */
+  .till-row { display:grid; grid-template-columns:80px 1fr 1fr; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); }
+  .till-denom { font-size:16px; font-weight:800; color:var(--navy); padding-left:4px; }
+  .till-input { text-align:center; padding:10px 6px; font-size:18px; font-weight:700; border:2px solid var(--border); border-radius:var(--radius-sm); color:var(--navy); width:100%; appearance:none; -webkit-appearance:none; outline:none; }
+  .till-input:focus { border-color:var(--navy); }
+  .till-input.pull { border-color:var(--gold); background:var(--warn-bg); }
+  .till-input.pull:focus { border-color:var(--gold); }
+
+  /* ── SUMMARY ROWS ────────────────────────────────────────────────────────── */
+  .summary-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); font-size:16px; }
+  .summary-row:last-child { border-bottom:none; }
+  .summary-row .s-label { font-weight:600; color:var(--ink-mid); }
+  .summary-row .s-value { font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums; }
+  .summary-row.total { border-top:2px solid var(--navy); margin-top:4px; padding-top:14px; }
+  .summary-row.total .s-label { font-size:14px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--navy); }
+  .summary-row.total .s-value { font-size:26px; color:var(--navy); }
+
+  /* ── TRAFFIC ─────────────────────────────────────────────────────────────── */
+  .traffic-options { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .traffic-option  { padding:14px 8px; border:2px solid var(--border); border-radius:var(--radius-sm); text-align:center; cursor:pointer; font-size:14px; font-weight:700; color:var(--ink-mid); background:var(--white); -webkit-tap-highlight-color:transparent; transition:all .15s; }
+  .traffic-option.selected { border-color:var(--navy); background:var(--navy); color:var(--white); }
+  .traffic-option .t-emoji { font-size:22px; display:block; margin-bottom:4px; }
+
+  /* ── MARKET INFO CHIPS ───────────────────────────────────────────────────── */
+  .market-info  { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .info-chip    { background:var(--off-white); border:2px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; }
+  .info-chip-label { font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-light); margin-bottom:4px; }
+  .info-chip-value { font-size:16px; font-weight:700; color:var(--navy); }
+
+  /* ── ALERTS ──────────────────────────────────────────────────────────────── */
+  .info-pill    { background:var(--warn-bg); border:2px solid var(--gold); border-radius:var(--radius-sm); padding:12px 14px; font-size:14px; font-weight:600; color:var(--warn-text); margin-bottom:14px; line-height:1.5; }
+  .success-pill { background:var(--success-bg); border:2px solid var(--success); border-radius:var(--radius-sm); padding:12px 14px; font-size:14px; font-weight:600; color:var(--success); margin-bottom:14px; }
+
+  /* ── BUTTONS ─────────────────────────────────────────────────────────────── */
+  .btn { width:100%; padding:18px; border:none; border-radius:var(--radius); font-size:17px; font-weight:800; cursor:pointer; -webkit-tap-highlight-color:transparent; letter-spacing:.01em; }
+  .btn-primary { background:var(--navy); color:var(--white); }
+  .btn-gold    { background:var(--gold); color:var(--navy); }
+
+  /* ── MISC ────────────────────────────────────────────────────────────────── */
+  .row-2   { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .mt-12   { margin-top:12px; }
+  .mt-16   { margin-top:16px; }
+  .divider { height:2px; background:var(--border); margin:16px 0; }
+  .text-center { text-align:center; }
+  .text-sm     { font-size:13px; color:var(--ink-light); font-weight:600; }
+
+  /* ── STATUS OVERLAY ──────────────────────────────────────────────────────── */
+  .status-overlay { display:none; position:fixed; inset:0; background:rgba(2,56,99,.92); z-index:200; align-items:center; justify-content:center; flex-direction:column; gap:16px; color:var(--white); text-align:center; padding:24px; }
+  .status-overlay.show { display:flex; }
+  .spinner { width:44px; height:44px; border:4px solid rgba(255,255,255,.25); border-top-color:var(--white); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @keyframes flashGreen { 0%{background:var(--success-bg);}100%{background:var(--white);} }
+  .confirmed-flash { animation:flashGreen .6s ease-out; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div><div class="brand-name">Old Kennedy</div><div class="brand-sub">Market Day</div></div>
+  <div class="mode-badge" id="modeBadge">Tally</div>
+</header>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" onclick="switchMode('tally')">☕ Tally</button>
+  <button class="mode-tab"        onclick="switchMode('close')">📋 Market Close</button>
+  <button class="mode-tab"        onclick="switchMode('settings')">⚙️ Setup</button>
+</div>
+
+<!-- ═══════ TALLY SCREEN ═══════ -->
+<div class="screen active" id="screen-tally">
+
+  <div class="info-pill">Tap <strong>+</strong> to build the order, then <strong>swipe to confirm</strong> and charge the customer.</div>
+
+  <!-- Row 1: Cold MT + Lemon Tea (2 wide) -->
+  <div class="tally-grid">
+    <div class="tally-item" id="ti-coldmt">
+      <div class="tally-label">Cold MT Cup</div>
+      <div class="tally-pending" id="p-coldmt">0</div>
+      <div class="tally-running">Today: <span id="ts-coldmt">0</span></div>
+      <div class="tally-controls">
+        <button class="tally-btn minus" onclick="adjustPending('coldmt',-1)">−</button>
+        <button class="tally-btn plus"  onclick="adjustPending('coldmt', 1)">+</button>
+      </div>
+    </div>
+    <div class="tally-item" id="ti-lemon">
+      <div class="tally-label">Lemon Tea Cup</div>
+      <div class="tally-pending" id="p-lemon">0</div>
+      <div class="tally-running">Today: <span id="ts-lemon">0</span></div>
+      <div class="tally-controls">
+        <button class="tally-btn minus" onclick="adjustPending('lemon',-1)">−</button>
+        <button class="tally-btn plus"  onclick="adjustPending('lemon', 1)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Hot MT + MT Bottle + LT Bottle (3 wide) -->
+  <div class="tally-grid-3" style="margin-top:12px;">
+    <div class="tally-item" id="ti-hotmt">
+      <div class="tally-label">Hot MT Cup</div>
+      <div class="tally-pending" id="p-hotmt">0</div>
+      <div class="tally-running">Today: <span id="ts-hotmt">0</span></div>
+      <div class="tally-controls">
+        <button class="tally-btn minus" onclick="adjustPending('hotmt',-1)">−</button>
+        <button class="tally-btn plus"  onclick="adjustPending('hotmt', 1)">+</button>
+      </div>
+    </div>
+    <div class="tally-item" id="ti-mtbottle">
+      <div class="tally-label">MT Bottle</div>
+      <div class="tally-pending" id="p-mtbottle">0</div>
+      <div class="tally-running">Today: <span id="ts-mtbottle">0</span></div>
+      <div class="tally-controls">
+        <button class="tally-btn minus" onclick="adjustPending('mtbottle',-1)">−</button>
+        <button class="tally-btn plus"  onclick="adjustPending('mtbottle', 1)">+</button>
+      </div>
+    </div>
+    <div class="tally-item" id="ti-ltbottle">
+      <div class="tally-label">LT Bottle</div>
+      <div class="tally-pending" id="p-ltbottle">0</div>
+      <div class="tally-running">Today: <span id="ts-ltbottle">0</span></div>
+      <div class="tally-controls">
+        <button class="tally-btn minus" onclick="adjustPending('ltbottle',-1)">−</button>
+        <button class="tally-btn plus"  onclick="adjustPending('ltbottle', 1)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM + PAYMENT -->
+  <div class="card mt-16" id="confirmCard" style="display:none;">
+    <div class="card-body">
+
+
+
+      <!-- ORDER SUMMARY + SWIPE -->
+      <div id="orderSummary" style="display:none;">
+        <div class="pending-label">Current order:</div>
+        <div id="pendingItems" class="pending-items"></div>
+        <div class="order-total-display">
+          <div class="order-total-label">Order Total</div>
+          <div class="order-total-amount" id="orderTotalDisplay">$0.00</div>
+        </div>
+        <div class="swipe-track" id="swipeTrack">
+          <div class="swipe-fill"  id="swipeFill"></div>
+          <div class="swipe-thumb" id="swipeThumb">→</div>
+          <div class="swipe-label" id="swipeLabel">Swipe to confirm &amp; pay</div>
+        </div>
+        <button onclick="confirmTally()" style="width:100%;margin-top:10px;padding:14px;border:2px solid var(--navy);background:none;color:var(--navy);border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+          Or tap here to confirm
+        </button>
+      </div>
+
+      <!-- PAYMENT PANEL (shown after swipe) -->
+      <div class="payment-panel" id="paymentPanel">
+        <div class="payment-header">
+          <div class="ph-label">Amount to collect</div>
+          <div class="ph-amount" id="payAmount">$0.00</div>
+        </div>
+
+        <div class="payment-btns">
+          <div class="pay-btn" id="btn-cash"   onclick="selectPayment('cash')">
+            <span class="pay-icon">💵</span>Cash
+          </div>
+          <div class="pay-btn" id="btn-emt"    onclick="selectPayment('emt')">
+            <span class="pay-icon">📱</span>E-Transfer
+          </div>
+          <div class="pay-btn" id="btn-square" onclick="selectPayment('square')">
+            <span class="pay-icon">🟦</span>Square
+          </div>
+        </div>
+
+        <!-- CASH FLOW -->
+        <div class="cash-flow" id="cashFlow">
+          <div class="field">
+            <label>Customer gave ($)</label>
+            <div class="input-prefix">
+              <span>$</span>
+              <input type="number" id="cashGiven" placeholder="0.00" step="0.01" min="0" oninput="calcChange()" style="font-size:22px;font-weight:700;">
+            </div>
+          </div>
+          <div class="change-display" id="changeDisplay" style="display:none;">
+            <div class="change-label">Change to give back</div>
+            <div class="change-amount" id="changeAmount">$0.00</div>
+          </div>
+          <div class="change-owing" id="changeOwing">
+            <div class="change-label">⚠ Not enough cash given</div>
+            <div class="change-amount" id="changeOwingAmount">$0.00 short</div>
+          </div>
+        </div>
+
+        <!-- EMT FLOW -->
+        <div class="emt-flow" id="emtFlow">
+          <div class="emt-box">
+            <div class="emt-label">Ask customer to e-transfer</div>
+            <div class="emt-amount" id="emtAmount">$0.00</div>
+            <div class="emt-email">oldkennedyto@gmail.com</div>
+            <div style="font-size:11px;color:var(--blue);opacity:.7;margin-top:4px;">Show this screen to the customer</div>
+          </div>
+        </div>
+
+        <!-- SQUARE FLOW -->
+        <div class="square-flow" id="squareFlow">
+          <div class="square-box">
+            <div class="square-logo">🟦</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:4px;">Charge customer</div>
+            <div class="square-amount" id="squareAmount">$0.00</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.7);margin:12px 0 6px;line-height:1.5;">
+              Enter this amount in Square.<br>
+              Switch to Square using your recent apps button.
+            </div>
+            <div style="background:rgba(255,255,255,.1);border-radius:8px;padding:10px 14px;font-size:12px;color:rgba(255,255,255,.55);text-align:left;line-height:1.6;">
+              💡 <strong style="color:rgba(255,255,255,.8);">Market day tip:</strong> Open Square before your first sale and keep it running in the background. Switching between apps takes one tap.
+            </div>
+          </div>
+        </div>
+
+        <button class="new-txn-btn" onclick="newTransaction()">+ New Transaction</button>
+      </div>
+
+    </div>
+  </div>
+
+  <button class="btn btn-gold mt-16" onclick="switchMode('close')">Done selling → Market Close</button>
+  <button onclick="resetAllCounts()" style="width:100%;margin-top:10px;padding:12px;border:1.5px dashed #ccc;background:none;color:var(--ink-light);border-radius:var(--radius);font-size:13px;cursor:pointer;">🧪 Reset all counts (testing only)</button>
+
+</div>
+
+<!-- ═══════ MARKET CLOSE SCREEN ═══════ -->
+<div class="screen" id="screen-close">
+
+  <div class="card">
+    <div class="card-header">Select Today's Market</div>
+    <div class="card-body">
+      <div class="field">
+        <label>Market</label>
+        <select id="marketSelect" onchange="onMarketSelect()">
+          <option value="">— Loading markets —</option>
+        </select>
+      </div>
+      <div id="marketInfo" style="display:none;">
+        <div class="market-info">
+          <div class="info-chip"><div class="info-chip-label">Location</div><div class="info-chip-value" id="mi-location">—</div></div>
+          <div class="info-chip"><div class="info-chip-label">Insurance</div><div class="info-chip-value" id="mi-insurance">—</div></div>
+          <div class="info-chip"><div class="info-chip-label">Booth Fee</div><div class="info-chip-value" id="mi-booth">—</div></div>
+          <div class="info-chip"><div class="info-chip-label">Total Fee</div><div class="info-chip-value" id="mi-total-fee">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="closeForm" style="display:none;">
+    <div class="card-header">Opening Float</div>
+    <div class="card-body">
+      <div class="info-pill" id="floatHint" style="display:none;"></div>
+      <div class="field">
+        <label>Opening Till (CAD)</label>
+        <div class="input-prefix"><span>$</span><input type="number" id="openTill" placeholder="0.00" step="0.01" min="0" oninput="recalc()"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="tillCard" style="display:none;">
+    <div class="card-header gold">💵 Till Count</div>
+    <div class="card-body" style="padding:12px;">
+
+      <!-- COLUMN HEADERS -->
+      <div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:8px;margin-bottom:8px;padding:0 4px;">
+        <div></div>
+        <div style="text-align:center;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);">Closing Till</div>
+        <div style="text-align:center;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);">Withdrawal</div>
+      </div>
+
+      <!-- DENOMINATION ROWS -->
+      <div class="till-row">
+        <div class="till-denom">$100</div>
+        <input class="till-input" type="number" id="d100"  min="0" placeholder="0" oninput="recalcTill()">
+        <input class="till-input pull" type="number" id="p100"  min="0" placeholder="0" oninput="recalcTill()">
+      </div>
+      <div class="till-row">
+        <div class="till-denom">$50</div>
+        <input class="till-input" type="number" id="d50"   min="0" placeholder="0" oninput="recalcTill()">
+        <input class="till-input pull" type="number" id="p50"   min="0" placeholder="0" oninput="recalcTill()">
+      </div>
+      <div class="till-row">
+        <div class="till-denom">$20</div>
+        <input class="till-input" type="number" id="d20"   min="0" placeholder="0" oninput="recalcTill()">
+        <input class="till-input pull" type="number" id="p20"   min="0" placeholder="0" oninput="recalcTill()">
+      </div>
+      <div class="till-row">
+        <div class="till-denom">$10</div>
+        <input class="till-input" type="number" id="d10"   min="0" placeholder="0" oninput="recalcTill()">
+        <input class="till-input pull" type="number" id="p10"   min="0" placeholder="0" oninput="recalcTill()">
+      </div>
+      <div class="till-row">
+        <div class="till-denom">$5</div>
+        <input class="till-input" type="number" id="d5"    min="0" placeholder="0" oninput="recalcTill()">
+        <input class="till-input pull" type="number" id="p5"    min="0" placeholder="0" oninput="recalcTill()">
+      </div>
+      <div class="till-row">
+        <div class="till-denom">$2</div>
+        <input class="till-input" type="number" id="d2"    min="0" placeholder="0" oninput="recalcTill()">
+        <input class="till-input pull" type="number" id="p2"    min="0" placeholder="0" oninput="recalcTill()">
+      </div>
+      <div class="till-row">
+        <div class="till-denom">$1</div>
+        <input class="till-input" type="number" id="d1"    min="0" placeholder="0" oninput="recalcTill()">
+        <input class="till-input pull" type="number" id="p1"    min="0" placeholder="0" oninput="recalcTill()">
+      </div>
+      <div class="till-row" style="border-bottom:none;">
+        <div class="till-denom">¢25</div>
+        <input class="till-input" type="number" id="d025"  min="0" placeholder="0" oninput="recalcTill()">
+        <input class="till-input pull" type="number" id="p025"  min="0" placeholder="0" oninput="recalcTill()">
+      </div>
+
+      <!-- TOTALS -->
+      <div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:8px;margin-top:10px;padding-top:10px;border-top:2px solid var(--navy);">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--navy);align-self:center;">Total</div>
+        <div style="text-align:center;">
+          <div style="font-size:11px;font-weight:700;color:var(--ink-light);margin-bottom:2px;">Cash Counted</div>
+          <div style="font-size:20px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;" id="totalCashCounted">$0.00</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:2px;">Deposit</div>
+          <div style="font-size:20px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;" id="depositAmount">$0.00</div>
+        </div>
+      </div>
+
+      <!-- CLOSING FLOAT -->
+      <div style="background:var(--off-white);border:2px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--navy);">Closing Float</div>
+        <div style="font-size:24px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;" id="closingFloat">$0.00</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="card" id="cardCard" style="display:none;">
+    <div class="card-header">Card & E-Transfer</div>
+    <div class="card-body">
+      <div class="field"><label>Card Revenue — from Square (CAD)</label><div class="input-prefix"><span>$</span><input type="number" id="cardRev" placeholder="0.00" step="0.01" min="0" oninput="recalc()"></div></div>
+      <div class="field"><label>E-Transfer Received (CAD)</label><div class="input-prefix"><span>$</span><input type="number" id="etransfer" placeholder="0.00" step="0.01" min="0" oninput="recalc()"></div></div>
+    </div>
+  </div>
+
+  <div class="card" id="productsCard" style="display:none;">
+    <div class="card-header">Units Sold Today</div>
+    <div class="card-body">
+      <div class="success-pill">✓ Pulled from Tally Counter — override if needed</div>
+
+      <!-- Row 1: Cold MT + Lemon Tea -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+
+        <div style="background:var(--off-white);border:2px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-light);margin-bottom:6px;">Cold MT</div>
+          <input type="number" id="coldMTCups" min="0" placeholder="0" oninput="recalc()"
+            style="width:100%;text-align:center;font-size:26px;font-weight:800;color:var(--navy);border:2px solid var(--border);border-radius:var(--radius-sm);padding:8px 4px;background:var(--white);">
+        </div>
+
+        <div style="background:var(--off-white);border:2px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-light);margin-bottom:6px;">Lemon Tea</div>
+          <input type="number" id="lemonCups" min="0" placeholder="0" oninput="recalc()"
+            style="width:100%;text-align:center;font-size:26px;font-weight:800;color:var(--navy);border:2px solid var(--border);border-radius:var(--radius-sm);padding:8px 4px;background:var(--white);">
+        </div>
+
+      </div>
+
+      <!-- Row 2: Hot MT + MT Bottle + LT Bottle -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+
+        <div style="background:var(--off-white);border:2px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-light);margin-bottom:6px;">Hot MT</div>
+          <input type="number" id="hotMTCups" min="0" placeholder="0" oninput="recalc()"
+            style="width:100%;text-align:center;font-size:26px;font-weight:800;color:var(--navy);border:2px solid var(--border);border-radius:var(--radius-sm);padding:8px 4px;background:var(--white);">
+        </div>
+
+        <div style="background:var(--off-white);border:2px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-light);margin-bottom:6px;">MT Bottle</div>
+          <input type="number" id="mtBottlesSold" min="0" placeholder="0" oninput="recalc()"
+            style="width:100%;text-align:center;font-size:26px;font-weight:800;color:var(--navy);border:2px solid var(--border);border-radius:var(--radius-sm);padding:8px 4px;background:var(--white);">
+        </div>
+
+        <div style="background:var(--off-white);border:2px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-light);margin-bottom:6px;">LT Bottle</div>
+          <input type="number" id="ltBottlesSold" min="0" placeholder="0" oninput="recalc()"
+            style="width:100%;text-align:center;font-size:26px;font-weight:800;color:var(--navy);border:2px solid var(--border);border-radius:var(--radius-sm);padding:8px 4px;background:var(--white);">
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="trafficCard" style="display:none;">
+    <div class="card-header">Foot Traffic</div>
+    <div class="card-body">
+      <div class="traffic-options">
+        <div class="traffic-option" id="tr-Low"    onclick="setTraffic('Low')">   <span class="t-emoji">🚶</span>Low</div>
+        <div class="traffic-option" id="tr-Medium" onclick="setTraffic('Medium')"><span class="t-emoji">👥</span>Medium</div>
+        <div class="traffic-option" id="tr-High"   onclick="setTraffic('High')">  <span class="t-emoji">🎉</span>High</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="notesCard" style="display:none;">
+    <div class="card-header">Notes</div>
+    <div class="card-body">
+      <textarea id="notes" rows="3" placeholder="Weather, what sold well, anything to remember…" style="resize:none;width:100%;padding:12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:16px;"></textarea>
+    </div>
+  </div>
+
+  <div class="card" id="summaryCard" style="display:none;">
+    <div class="card-header gold">📊 Review before submitting</div>
+    <div class="card-body">
+      <div class="summary-row"><span class="s-label">Cash Revenue</span><span class="s-value" id="sum-cash">$0.00</span></div>
+      <div class="summary-row"><span class="s-label">Card Revenue</span><span class="s-value" id="sum-card">$0.00</span></div>
+      <div class="summary-row"><span class="s-label">E-Transfer</span><span class="s-value" id="sum-etransfer">$0.00</span></div>
+      <div class="summary-row total"><span class="s-label">Total Revenue</span><span class="s-value" id="sum-total">$0.00</span></div>
+      <div class="divider"></div>
+      <div class="summary-row"><span class="s-label">Cold MT Cups</span><span class="s-value" id="sum-coldmt">0</span></div>
+      <div class="summary-row"><span class="s-label">Hot MT Cups</span><span class="s-value" id="sum-hotmt">0</span></div>
+      <div class="summary-row"><span class="s-label">Lemon Tea Cups</span><span class="s-value" id="sum-lemon">0</span></div>
+      <div class="summary-row"><span class="s-label">MT Bottles</span><span class="s-value" id="sum-mtbottles">0</span></div>
+      <div class="summary-row"><span class="s-label">LT Bottles</span><span class="s-value" id="sum-ltbottles">0</span></div>
+      <div class="divider"></div>
+      <div class="summary-row"><span class="s-label">Deposit</span><span class="s-value" id="sum-deposit">$0.00</span></div>
+      <div class="summary-row"><span class="s-label">Closing Float</span><span class="s-value" id="sum-float">$0.00</span></div>
+    </div>
+  </div>
+
+  <div id="submitArea" style="display:none;">
+    <button class="btn btn-primary mt-16" onclick="submitToSheets()">Submit to Google Sheets</button>
+    <p class="text-sm text-center mt-12">Updates the market row in your workbook.</p>
+  </div>
+
+</div>
+
+<!-- ═══════ SETTINGS SCREEN ═══════ -->
+<div class="screen" id="screen-settings">
+
+  <div class="card">
+    <div class="card-header">Google Sheets Connection</div>
+    <div class="card-body">
+
+      <div id="creds-status-ok" style="display:none;">
+        <div class="success-pill" id="creds-ok-msg">✓ Credentials loaded and saved</div>
+      </div>
+      <div id="creds-status-missing">
+        <div class="info-pill">Paste your service account JSON key below. This is saved on this device and only needs to be done once.</div>
+      </div>
+
+      <div class="field">
+        <label>Service Account JSON Key</label>
+        <textarea id="credsInput" rows="6" placeholder='Paste the full contents of your JSON key file here…' style="resize:none;width:100%;padding:12px;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:monospace;color:var(--navy);"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="saveCredentials()" style="margin-top:4px;">Save Credentials</button>
+      <button onclick="clearCredentials()" style="width:100%;margin-top:10px;padding:12px;border:2px solid var(--border);background:none;color:var(--ink-light);border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;">Clear Saved Credentials</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Sheet Settings</div>
+    <div class="card-body">
+      <div class="info-chip" style="margin-bottom:0;">
+        <div class="info-chip-label">Connected Sheet ID</div>
+        <div class="info-chip-value" style="font-size:13px;word-break:break-all;">1hrj1DlBqnT7UnwoP5U2Qch0MeIMFBNrd4ugUCw0T9pY</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Setup Checklist</div>
+    <div class="card-body">
+      <div class="summary-row">
+        <span class="s-label">1. Google Cloud project created</span>
+        <span style="font-size:20px;">✓</span>
+      </div>
+      <div class="summary-row">
+        <span class="s-label">2. Sheets API enabled</span>
+        <span style="font-size:20px;">✓</span>
+      </div>
+      <div class="summary-row">
+        <span class="s-label">3. Service account created</span>
+        <span style="font-size:20px;">✓</span>
+      </div>
+      <div class="summary-row">
+        <span class="s-label">4. JSON key created & pasted above</span>
+        <span id="check-creds" style="font-size:20px;">⬜</span>
+      </div>
+      <div class="summary-row">
+        <span class="s-label">5. Sheet shared with service account</span>
+        <span style="font-size:20px;">⬜</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- STATUS OVERLAY -->
+<div class="status-overlay" id="statusOverlay">
+  <div id="statusIcon" style="font-size:48px;display:none;"></div>
+  <div class="spinner" id="statusSpinner"></div>
+  <div style="font-size:18px;font-weight:700;" id="statusMsg">Submitting…</div>
+  <div style="font-size:14px;opacity:.75;" id="statusSub"></div>
+  <button style="display:none;margin-top:16px;padding:14px 24px;border:2px solid white;background:none;color:white;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;" id="statusClose" onclick="closeStatus()">Close</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════
+const CONFIG = {
+  credentials:  null, // paste your service account JSON here
+  sheetId:      '1hrj1DlBqnT7UnwoP5U2Qch0MeIMFBNrd4ugUCw0T9pY',
+  marketsTab:   'Markets',
+  dataStartRow: 10,
+};
+
+// ══════════════════════════════════════════════
+// PRICING
+// ══════════════════════════════════════════════
+const PRICES = {
+  coldmt: 6.00,  // Cold MT Cup
+  hotmt:  4.00,  // Hot MT Cup
+  lemon:  6.00,  // Cold Lemon Tea Cup
+};
+
+function bottlePrice(qty) {
+  if (qty <= 0) return 0;
+  if (qty === 1) return 7.00;
+  if (qty === 2) return 12.00;
+  if (qty === 3) return 18.00;
+  if (qty === 4) return 22.00;
+  return qty * 5.50; // 5+ bottles
+}
+
+function calcOrderTotal(p) {
+  const cups    = (p.coldmt * PRICES.coldmt) + (p.hotmt * PRICES.hotmt) + (p.lemon * PRICES.lemon);
+  const totalBottles = (p.mtbottle||0) + (p.ltbottle||0);
+  const bottles = bottlePrice(totalBottles);
+  return cups + bottles;
+}
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+const tallyCounts = { coldmt:0, lemon:0, hotmt:0, mtbottle:0, ltbottle:0 };
+const pending     = { coldmt:0, lemon:0, hotmt:0, mtbottle:0, ltbottle:0 };
+const KEYS        = ['coldmt','lemon','hotmt','mtbottle','ltbottle'];
+const LABELS      = { coldmt:'Cold MT Cup', lemon:'Lemon Tea Cup', hotmt:'Hot MT Cup', mtbottle:'MT Bottle', ltbottle:'LT Bottle' };
+// Till denoms handled in recalcTill()
+let selectedMarketRow = null;
+let selectedTraffic   = '';
+let markets           = [];
+let currentOrderTotal = 0;
+
+// ══════════════════════════════════════════════
+// MODE SWITCH
+// ══════════════════════════════════════════════
+function switchMode(mode) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-'+mode).classList.add('active');
+  const tabIdx = mode==='tally'?0:mode==='close'?1:2;
+  document.querySelectorAll('.mode-tab')[tabIdx].classList.add('active');
+  const badges = {tally:'Tally', close:'Close', settings:'Setup'};
+  document.getElementById('modeBadge').textContent = badges[mode]||mode;
+  if (mode==='close') {
+    document.getElementById('coldMTCups').value  = tallyCounts.coldmt||'';
+    document.getElementById('lemonCups').value   = tallyCounts.lemon||'';
+    document.getElementById('hotMTCups').value   = tallyCounts.hotmt||'';
+    document.getElementById('mtBottlesSold').value = tallyCounts.mtbottle||'';
+    document.getElementById('ltBottlesSold').value = tallyCounts.ltbottle||'';
+    loadMarkets(); recalc();
+  }
+  if (mode==='settings') {
+    updateCredsUI();
+  }
+}
+
+// ══════════════════════════════════════════════
+// TALLY — PENDING
+// ══════════════════════════════════════════════
+function adjustPending(key, delta) {
+  pending[key] = Math.max(0, pending[key]+delta);
+  updateTallyUI();
+}
+
+function updateTallyUI() {
+  let anyPending = false;
+  currentOrderTotal = calcOrderTotal(pending);
+
+  KEYS.forEach(k => {
+    const p = pending[k];
+    const pe = document.getElementById('p-'+k);
+    if (pe) { pe.textContent = p; pe.classList.toggle('active', p>0); }
+    const re = document.getElementById('ts-'+k);
+    if (re) re.textContent = tallyCounts[k];
+    const card = document.getElementById('ti-'+k);
+    if (card) card.classList.toggle('has-pending', p>0);
+    if (p>0) anyPending = true;
+  });
+
+  const summary  = document.getElementById('orderSummary');
+  const payment  = document.getElementById('paymentPanel');
+  const track    = document.getElementById('swipeTrack');
+
+  // Don't touch payment panel or confirm card if payment is already showing
+  if (payment.style.display === 'block') return;
+
+  if (anyPending) {
+    document.getElementById('confirmCard').style.display = 'block';
+    summary.style.display  = 'block';
+    payment.style.display  = 'none';
+
+    // Build chips with prices
+    const chips = KEYS.filter(k=>pending[k]>0).map(k => {
+      if (k==='bottle') {
+        return '<span class="pending-chip">'+pending[k]+'× Bottle — $'+bottlePrice(pending[k]).toFixed(2)+'</span>';
+      }
+      return '<span class="pending-chip">'+pending[k]+'× '+LABELS[k]+' — $'+(pending[k]*PRICES[k]).toFixed(2)+'</span>';
+    }).join('');
+    document.getElementById('pendingItems').innerHTML = chips;
+    document.getElementById('orderTotalDisplay').textContent = '$'+currentOrderTotal.toFixed(2);
+    track.style.opacity = '1';
+    track.style.pointerEvents = 'auto';
+  } else {
+    summary.style.display = 'none';
+    payment.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════
+// CONFIRM TRANSACTION (after swipe)
+// ══════════════════════════════════════════════
+function confirmTally() {
+  const total = KEYS.reduce((a,k)=>a+pending[k],0);
+  if (total===0) return;
+
+  // Commit to tallyCounts
+  KEYS.forEach(k => { tallyCounts[k]+=pending[k]; pending[k]=0; });
+  saveTally();
+
+  // Show payment panel
+  document.getElementById('orderSummary').style.display = 'none';
+  document.getElementById('paymentPanel').style.display = 'block';
+  document.getElementById('payAmount').textContent      = '$'+currentOrderTotal.toFixed(2);
+  document.getElementById('squareAmount').textContent   = '$'+currentOrderTotal.toFixed(2);
+  document.getElementById('emtAmount').textContent      = '$'+currentOrderTotal.toFixed(2);
+
+  // Reset payment flows
+  ['cash','emt','square'].forEach(p => {
+    document.getElementById('btn-'+p).classList.remove('selected');
+  });
+  document.getElementById('cashFlow').style.display   = 'none';
+  document.getElementById('emtFlow').style.display    = 'none';
+  document.getElementById('squareFlow').style.display = 'none';
+  document.getElementById('cashGiven').value          = '';
+  document.getElementById('changeDisplay').style.display = 'none';
+  document.getElementById('changeOwing').style.display   = 'none';
+
+  // Refresh running totals display only (don't call updateTallyUI which would hide payment panel)
+  KEYS.forEach(k => {
+    const re = document.getElementById('ts-'+k);
+    if (re) re.textContent = tallyCounts[k];
+    const pe = document.getElementById('p-'+k);
+    if (pe) { pe.textContent = 0; pe.classList.remove('active'); }
+    const card = document.getElementById('ti-'+k);
+    if (card) card.classList.remove('has-pending');
+  });
+  resetSwipe();
+}
+
+function newTransaction() {
+  KEYS.forEach(k => pending[k]=0);
+  currentOrderTotal = 0;
+  document.getElementById('paymentPanel').style.display = 'none';
+  updateTallyUI();
+}
+
+// ══════════════════════════════════════════════
+// PAYMENT FLOWS
+// ══════════════════════════════════════════════
+function selectPayment(method) {
+  ['cash','emt','square'].forEach(p => document.getElementById('btn-'+p).classList.remove('selected'));
+  document.getElementById('btn-'+method).classList.add('selected');
+  document.getElementById('cashFlow').style.display   = method==='cash'   ? 'block' : 'none';
+  document.getElementById('emtFlow').style.display    = method==='emt'    ? 'block' : 'none';
+  document.getElementById('squareFlow').style.display = method==='square' ? 'block' : 'none';
+  if (method==='cash') document.getElementById('cashGiven').focus();
+}
+
+function calcChange() {
+  const given = parseFloat(document.getElementById('cashGiven').value)||0;
+  const owed  = currentOrderTotal;
+  const change = given - owed;
+  if (given === 0) {
+    document.getElementById('changeDisplay').style.display = 'none';
+    document.getElementById('changeOwing').style.display   = 'none';
+  } else if (change >= 0) {
+    document.getElementById('changeAmount').textContent    = '$'+change.toFixed(2);
+    document.getElementById('changeDisplay').style.display = 'block';
+    document.getElementById('changeOwing').style.display   = 'none';
+  } else {
+    document.getElementById('changeOwingAmount').textContent = '$'+Math.abs(change).toFixed(2)+' short';
+    document.getElementById('changeOwing').style.display    = 'block';
+    document.getElementById('changeDisplay').style.display  = 'none';
+  }
+}
+
+function copyEmail() {
+  const email = 'oldkennedyto@gmail.com';
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(email).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent='Copy Email Address'; btn.classList.remove('copied'); }, 2000);
+    });
+  } else {
+    // Fallback
+    const el = document.createElement('textarea');
+    el.value = email; document.body.appendChild(el); el.select();
+    document.execCommand('copy'); document.body.removeChild(el);
+    const btn = document.getElementById('copyBtn');
+    btn.textContent='✓ Copied!'; btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='Copy Email Address';btn.classList.remove('copied');},2000);
+  }
+}
+
+function openSquare() {
+  const isAndroid = /Android/.test(navigator.userAgent);
+  const isIOS     = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  if (isAndroid) {
+    // On Android, use the Play Store link which Android will intercept
+    // and open the installed Square app instead of going to the store
+    const a = document.createElement('a');
+    a.setAttribute('href', 'https://play.google.com/store/apps/details?id=com.squareup');
+    a.setAttribute('target', '_blank');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } else if (isIOS) {
+    // iOS: square:// opens the Square app directly
+    window.location.href = 'square://';
+  } else {
+    alert('Open the Square app on your phone to charge $' + currentOrderTotal.toFixed(2));
+  }
+}
+
+// ══════════════════════════════════════════════
+// SAVE / LOAD
+// ══════════════════════════════════════════════
+function saveTally() {
+  try { localStorage.setItem('ok_tally', JSON.stringify(tallyCounts)); } catch(e) {}
+}
+function loadTally() {
+  try {
+    const d = JSON.parse(localStorage.getItem('ok_tally')||'{}');
+    KEYS.forEach(k => { if(d[k]!==undefined) tallyCounts[k]=d[k]; });
+  } catch(e) {}
+  updateTallyUI();
+}
+
+// ══════════════════════════════════════════════
+// SWIPE
+// ══════════════════════════════════════════════
+let swipeStartX=0, swipeActive=false, swipeConfirmed=false;
+
+function resetSwipe() {
+  swipeActive=swipeConfirmed=false;
+  const thumb=document.getElementById('swipeThumb');
+  const fill =document.getElementById('swipeFill');
+  if(thumb) thumb.style.left='4px';
+  if(fill)  fill.style.width='64px';
+  const lbl=document.getElementById('swipeLabel');
+  if(lbl) { lbl.textContent='Swipe to confirm & pay'; lbl.classList.remove('confirmed'); }
+}
+
+function initSwipe() {
+  const track = document.getElementById('swipeTrack');
+  if (!track) return;
+
+  function doSwipe(x) {
+    if (!swipeActive||swipeConfirmed) return;
+    const maxDx   = track.offsetWidth-64;
+    const clamped = Math.max(0,Math.min(x-swipeStartX,maxDx));
+    document.getElementById('swipeThumb').style.left = (4+clamped)+'px';
+    document.getElementById('swipeFill').style.width = (64+clamped)+'px';
+    if (clamped/maxDx>=0.70) {
+      swipeConfirmed=true; swipeActive=false;
+      document.getElementById('swipeThumb').style.left=(track.offsetWidth-60)+'px';
+      document.getElementById('swipeFill').style.width=track.offsetWidth+'px';
+      confirmTally();
+    }
+  }
+  function endSwipe() { if(!swipeConfirmed) resetSwipe(); swipeActive=false; }
+
+  track.addEventListener('touchstart', e=>{swipeStartX=e.touches[0].clientX;swipeActive=true;},{passive:true});
+  track.addEventListener('touchmove',  e=>doSwipe(e.touches[0].clientX),{passive:true});
+  track.addEventListener('touchend',   endSwipe,{passive:true});
+  track.addEventListener('mousedown',  e=>{
+    swipeStartX=e.clientX; swipeActive=true;
+    const mm=e=>doSwipe(e.clientX);
+    const mu=()=>{endSwipe();document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);};
+    document.addEventListener('mousemove',mm);
+    document.addEventListener('mouseup',mu);
+  });
+}
+
+// ══════════════════════════════════════════════
+// MARKET CLOSE — TILL COUNT
+// ══════════════════════════════════════════════
+function recalcTill() {
+  // Till denominations
+  const TILL_DENOMS = [
+    {till:'d100',pull:'p100',value:100},
+    {till:'d50', pull:'p50', value:50 },
+    {till:'d20', pull:'p20', value:20 },
+    {till:'d10', pull:'p10', value:10 },
+    {till:'d5',  pull:'p5',  value:5  },
+    {till:'d2',  pull:'p2',  value:2  },
+    {till:'d1',  pull:'p1',  value:1  },
+    {till:'d025',pull:'p025',value:.25},
+  ];
+  let totalCash = 0;
+  let totalPull = 0;
+  TILL_DENOMS.forEach(d => {
+    const tillQty = parseFloat(document.getElementById(d.till).value)||0;
+    const pullQty = parseFloat(document.getElementById(d.pull).value)||0;
+    totalCash += tillQty * d.value;
+    totalPull += pullQty * d.value;
+  });
+  document.getElementById('totalCashCounted').textContent = '$'+totalCash.toFixed(2);
+  document.getElementById('depositAmount').textContent    = '$'+totalPull.toFixed(2);
+  document.getElementById('closingFloat').textContent     = '$'+Math.max(0,totalCash-totalPull).toFixed(2);
+  recalc();
+}
+
+function recalc() {
+  // Guard: elements may not exist if cards are hidden
+  const getVal = id => {
+    const el = document.getElementById(id);
+    return el ? parseFloat(el.value)||0 : 0;
+  };
+  const openTill = getVal('openTill');
+  const cardRev  = getVal('cardRev');
+  const etrans   = getVal('etransfer');
+
+  // Get total cash from denomination inputs
+  const TILL_DENOMS2 = [
+    {id:'d100',value:100},{id:'d50',value:50},{id:'d20',value:20},
+    {id:'d10',value:10},{id:'d5',value:5},{id:'d2',value:2},
+    {id:'d1',value:1},{id:'d025',value:.25},
+  ];
+  let totalCash=0;
+  TILL_DENOMS2.forEach(d=>{totalCash+=(parseFloat(document.getElementById(d.id).value)||0)*d.value;});
+
+  // Get deposit from pull-out denomination inputs
+  const PULL_DENOMS = [
+    {id:'p100',value:100},{id:'p50',value:50},{id:'p20',value:20},
+    {id:'p10',value:10},{id:'p5',value:5},{id:'p2',value:2},
+    {id:'p1',value:1},{id:'p025',value:.25},
+  ];
+  let deposit=0;
+  PULL_DENOMS.forEach(d=>{ const el=document.getElementById(d.id); deposit+=(el?parseFloat(el.value)||0:0)*d.value; });
+
+  const cashRev  = Math.max(0,totalCash-openTill);
+  const totalRev = cashRev+cardRev+etrans;
+  const closeFlt = Math.max(0,totalCash-deposit);
+  const mtSold   = Math.max(0,(parseFloat(document.getElementById('mtBrought').value)||0)-(parseFloat(document.getElementById('mtRemain').value)||0));
+  const ltSold   = Math.max(0,(parseFloat(document.getElementById('ltBrought').value)||0)-(parseFloat(document.getElementById('ltRemain').value)||0));
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('sum-cash','$'+cashRev.toFixed(2));
+  set('sum-card','$'+cardRev.toFixed(2));
+  set('sum-etransfer','$'+etrans.toFixed(2));
+  set('sum-total','$'+totalRev.toFixed(2));
+  set('sum-mtSold',mtSold);set('sum-ltSold',ltSold);
+  set('sum-coldmt',document.getElementById('coldMTCups').value||0);
+  set('sum-hotmt', document.getElementById('hotMTCups').value||0);
+  set('sum-lemon', document.getElementById('lemonCups').value||0);
+  set('sum-deposit','$'+deposit.toFixed(2));
+  set('sum-float','$'+closeFlt.toFixed(2));
+}
+
+function setTraffic(val) {
+  selectedTraffic=val;
+  ['Low','Medium','High'].forEach(v=>document.getElementById('tr-'+v).classList.toggle('selected',v===val));
+}
+
+// ══════════════════════════════════════════════
+// LOAD MARKETS
+// ══════════════════════════════════════════════
+async function loadMarkets() {
+  const sel=document.getElementById('marketSelect');
+  if(!CONFIG.credentials){sel.innerHTML='<option value="">⚠ Add credentials to CONFIG first</option>';return;}
+  sel.innerHTML='<option value="">Loading…</option>';
+  try {
+    const token=await getAccessToken();
+    const range=encodeURIComponent(CONFIG.marketsTab+'!A10:D60');
+    const res=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+CONFIG.sheetId+'/values/'+range,{headers:{Authorization:'Bearer '+token}});
+    const rows=(await res.json()).values||[];
+    const today=new Date();today.setHours(0,0,0,0);
+    markets=[];sel.innerHTML='<option value="">— Select a market —</option>';
+    rows.forEach((row,i)=>{
+      const name=row[2];const dateStr=row[1];
+      if(!name||!dateStr)return;
+      const mDate=new Date(dateStr);if(isNaN(mDate))return;
+      mDate.setHours(0,0,0,0);
+      if(mDate>=today){
+        const sheetRow=CONFIG.dataStartRow+i;
+        markets.push({row:sheetRow,date:dateStr,name,rawRow:row});
+        const opt=document.createElement('option');
+        opt.value=sheetRow;opt.textContent=name+' — '+dateStr;
+        sel.appendChild(opt);
+      }
+    });
+    if(markets.length===0)sel.innerHTML='<option value="">No upcoming markets found</option>';
+  }catch(e){sel.innerHTML='<option value="">Error — check credentials</option>';console.error(e);}
+}
+
+async function onMarketSelect() {
+  const rowNum=parseInt(document.getElementById('marketSelect').value);
+  if(!rowNum){hideCloseCards();return;}
+  selectedMarketRow=rowNum;
+  const mkt=markets.find(m=>m.row===rowNum);if(!mkt)return;
+  document.getElementById('mi-location').textContent=mkt.rawRow[3]||'—';
+  try {
+    const token=await getAccessToken();
+
+    // Batch all fetches into one batchGet call — single round trip
+    // Wrap sheet name in single quotes for batchGet compatibility
+    const tab = "'"+CONFIG.marketsTab+"'";
+    const ranges = [
+      tab+'!E'+rowNum+':F'+rowNum,            // insurance + booth fee
+      tab+'!J'+(rowNum-1)+':J'+(rowNum-1),   // previous market closing cash
+    ];
+    const batchUrl = 'https://sheets.googleapis.com/v4/spreadsheets/'+CONFIG.sheetId
+      +'/values:batchGet?ranges='+ranges.map(encodeURIComponent).join('&ranges=');
+
+    const batchRes = await fetch(batchUrl, {headers:{Authorization:'Bearer '+token}});
+    const batchData = await batchRes.json();
+    const valueRanges = batchData.valueRanges || [];
+
+    // DEBUG — log everything so we can see what the API returns
+    console.log('batchGet URL:', batchUrl);
+    console.log('batchGet response:', JSON.stringify(batchData));
+    console.log('valueRanges[0]:', JSON.stringify(valueRanges[0]));
+    console.log('valueRanges[1]:', JSON.stringify(valueRanges[1]));
+
+    // Insurance (E) and Booth Fee (F) — fetched directly so sparse rows don't cause issues
+    const feeRow = (valueRanges[0]?.values||[[]])[0] || [];
+    console.log('feeRow:', JSON.stringify(feeRow));
+    const cleanNum = v => parseFloat(String(v||'0').replace(/[$,]/g,''))||0;
+    const ins = cleanNum(feeRow[0]);
+    const bth = cleanNum(feeRow[1]);
+    console.log('ins:', ins, 'bth:', bth);
+    document.getElementById('mi-insurance').textContent='$'+ins.toFixed(2);
+    document.getElementById('mi-booth').textContent='$'+bth.toFixed(2);
+    document.getElementById('mi-total-fee').textContent='$'+(ins+bth).toFixed(2);
+    document.getElementById('marketInfo').style.display='block';
+
+    // Previous market closing cash (col J)
+    if(rowNum > CONFIG.dataStartRow){
+      const prevRow = (valueRanges[1]?.values||[[]])[0] || [];
+      const hint = parseFloat(String(prevRow[0]||'0').replace(/[$,]/g,''))||0;
+      if(hint>0){
+        document.getElementById('floatHint').textContent='Opening float from last market: $'+hint.toFixed(2);
+        document.getElementById('floatHint').style.display='block';
+        document.getElementById('openTill').value=hint.toFixed(2);
+      }
+    }
+  }catch(e){console.error(e);}
+  showCloseCards();
+}
+
+function showCloseCards(){
+  ['closeForm','tillCard','cardCard','productsCard','cupsCard','trafficCard','notesCard','summaryCard','submitArea']
+    .forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='block';});
+  recalcTill();recalc();
+}
+function hideCloseCards(){
+  document.getElementById('marketInfo').style.display='none';
+  ['closeForm','tillCard','cardCard','productsCard','cupsCard','trafficCard','notesCard','summaryCard','submitArea']
+    .forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+}
+
+// ══════════════════════════════════════════════
+// SUBMIT
+// ══════════════════════════════════════════════
+async function submitToSheets(){
+  if(!selectedMarketRow){alert('Select a market first.');return;}
+  showStatus(true,'Submitting…','Writing to Google Sheets');
+  try{
+    const openTill =parseFloat(document.getElementById('openTill').value)||0;
+    const cardRev  =parseFloat(document.getElementById('cardRev').value)||0;
+    const etrans   =parseFloat(document.getElementById('etransfer').value)||0;
+    const TILL_D=[
+      {id:'d100',value:100},{id:'d50',value:50},{id:'d20',value:20},
+      {id:'d10',value:10},{id:'d5',value:5},{id:'d2',value:2},
+      {id:'d1',value:1},{id:'d025',value:.25},
+    ];
+    let totalCash=0;
+    TILL_D.forEach(d=>{ const el=document.getElementById(d.id); totalCash+=(el?parseFloat(el.value)||0:0)*d.value; });
+    const cashRev=Math.max(0,totalCash-openTill);
+    const token=await getAccessToken();
+    const R=selectedMarketRow;
+    const updates=[
+      {range:CONFIG.marketsTab+'!H'+R,values:[[selectedTraffic]]},
+      {range:CONFIG.marketsTab+'!I'+R,values:[[openTill]]},
+      {range:CONFIG.marketsTab+'!J'+R,values:[[cashRev]]},
+      {range:CONFIG.marketsTab+'!K'+R,values:[[cardRev]]},
+      {range:CONFIG.marketsTab+'!L'+R,values:[[etrans]]},
+      {range:CONFIG.marketsTab+'!R'+R,values:[[parseInt(document.getElementById('mtBottlesSold').value)||0]]},
+      {range:CONFIG.marketsTab+'!U'+R,values:[[parseInt(document.getElementById('ltBottlesSold').value)||0]]},
+      {range:CONFIG.marketsTab+'!Y'+R,values:[[parseInt(document.getElementById('coldMTCups').value)||0]]},
+      {range:CONFIG.marketsTab+'!Z'+R,values:[[parseInt(document.getElementById('hotMTCups').value)||0]]},
+      {range:CONFIG.marketsTab+'!AA'+R,values:[[parseInt(document.getElementById('lemonCups').value)||0]]},
+      {range:CONFIG.marketsTab+'!AH'+R,values:[[document.getElementById('notes').value||'']]},
+    ];
+    const res=await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+CONFIG.sheetId+'/values:batchUpdate',{
+      method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify({valueInputOption:'USER_ENTERED',data:updates}),
+    });
+    if(!res.ok)throw new Error('Sheets API error: '+res.status);
+    KEYS.forEach(k=>{tallyCounts[k]=0;pending[k]=0;});
+    saveTally();loadTally();
+    showStatus(false,'✅ Submitted!','Market data saved. Tally reset.');
+  }catch(e){console.error(e);showStatus(false,'❌ Failed',e.message||'Check credentials.');}
+}
+
+// ══════════════════════════════════════════════
+// GOOGLE AUTH
+// ══════════════════════════════════════════════
+// Token cache — reuse for up to 55 minutes (tokens last 60)
+let _cachedToken = null;
+let _tokenExpiry = 0;
+
+async function getAccessToken(){
+  const now = Math.floor(Date.now()/1000);
+  if (_cachedToken && now < _tokenExpiry) return _cachedToken;
+
+  if(!CONFIG.credentials)throw new Error('No credentials configured');
+  const c=CONFIG.credentials;
+  const b64=o=>btoa(JSON.stringify(o)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+  const sig=`${b64({alg:'RS256',typ:'JWT'})}.${b64({iss:c.client_email,scope:'https://www.googleapis.com/auth/spreadsheets',aud:'https://oauth2.googleapis.com/token',exp:now+3600,iat:now})}`;
+  const der=Uint8Array.from(atob(c.private_key.replace(/-----[^-]+-----/g,'').replace(/\n/g,'')),x=>x.charCodeAt(0));
+  const key=await crypto.subtle.importKey('pkcs8',der.buffer,{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['sign']);
+  const raw=await crypto.subtle.sign('RSASSA-PKCS1-v1_5',key,new TextEncoder().encode(sig));
+  const jwt=sig+'.'+btoa(String.fromCharCode(...new Uint8Array(raw))).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+  const tr=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`});
+  const td=await tr.json();
+  if(!td.access_token)throw new Error(td.error_description||'Token error');
+
+  // Cache it for 55 minutes
+  _cachedToken = td.access_token;
+  _tokenExpiry = now + 3300;
+  return _cachedToken;
+}
+
+// ══════════════════════════════════════════════
+// STATUS
+// ══════════════════════════════════════════════
+function showStatus(spinning,msg,sub){
+  document.getElementById('statusIcon').style.display   = spinning?'none':'block';
+  document.getElementById('statusIcon').textContent     = msg.startsWith('✅')?'✅':'❌';
+  document.getElementById('statusSpinner').style.display= spinning?'block':'none';
+  document.getElementById('statusMsg').textContent      = msg;
+  document.getElementById('statusSub').textContent      = sub;
+  document.getElementById('statusClose').style.display  = spinning?'none':'block';
+  document.getElementById('statusOverlay').classList.add('show');
+}
+function closeStatus(){document.getElementById('statusOverlay').classList.remove('show');}
+
+// ══════════════════════════════════════════════
+// CREDENTIALS — saved to localStorage
+// ══════════════════════════════════════════════
+function saveCredentials() {
+  const raw = document.getElementById('credsInput').value.trim();
+  if (!raw) { alert('Please paste your JSON key first.'); return; }
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed.client_email || !parsed.private_key) {
+      alert('This does not look like a valid service account JSON key. Make sure you copied the full file.');
+      return;
+    }
+    localStorage.setItem('ok_credentials', raw);
+    CONFIG.credentials = parsed;
+    document.getElementById('credsInput').value = '';
+    updateCredsUI();
+    alert('✓ Credentials saved. You can now use Market Close to connect to Google Sheets.');
+  } catch(e) {
+    alert('Invalid JSON — make sure you copied the entire key file without any edits.');
+  }
+}
+
+function clearCredentials() {
+  if (!confirm('Remove saved credentials from this device?')) return;
+  localStorage.removeItem('ok_credentials');
+  CONFIG.credentials = null;
+  updateCredsUI();
+}
+
+function loadSavedCredentials() {
+  try {
+    const saved = localStorage.getItem('ok_credentials');
+    if (saved) {
+      CONFIG.credentials = JSON.parse(saved);
+      console.log('Credentials loaded from localStorage');
+    }
+  } catch(e) {
+    console.warn('Could not load saved credentials:', e);
+  }
+}
+
+function updateCredsUI() {
+  const hasCreds = !!CONFIG.credentials;
+  document.getElementById('creds-status-ok').style.display      = hasCreds ? 'block' : 'none';
+  document.getElementById('creds-status-missing').style.display = hasCreds ? 'none'  : 'block';
+  document.getElementById('check-creds').textContent = hasCreds ? '✓' : '⬜';
+  if (hasCreds && CONFIG.credentials.client_email) {
+    document.getElementById('creds-ok-msg').textContent =
+      '✓ Connected as: ' + CONFIG.credentials.client_email;
+  }
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+// Load credentials from localStorage
+loadSavedCredentials();
+
+function resetAllCounts() {
+  KEYS.forEach(k => { tallyCounts[k]=0; pending[k]=0; });
+  try { localStorage.removeItem('ok_tally'); } catch(e) {}
+  updateTallyUI();
+}
+
+loadTally();
+initSwipe();
+</script>
+</body>
+</html>
