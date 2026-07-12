@@ -66,7 +66,13 @@
 
   /* ── TALLY GRID ──────────────────────────────────────────────────────────── */
   .tally-grid   { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .tally-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  .tally-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .tally-grid-3 .tally-item { padding:14px 6px 12px; }
+  .tally-grid-3 .tally-label { font-size:11px; }
+  .tally-grid-3 .tally-pending { font-size:38px; min-height:46px; }
+  .tally-grid-3 .tally-btn.plus { width:46px; height:46px; font-size:24px; }
+  .tally-grid-3 .tally-btn { width:36px; height:36px; font-size:18px; }
+  .tally-grid-3 .tally-controls { gap:6px; }
   .tally-item {
     background:var(--white); border:2px solid var(--border); border-radius:var(--radius);
     padding:20px 12px 16px; text-align:center; display:flex; flex-direction:column;
