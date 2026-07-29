@@ -62,6 +62,7 @@
 
   .tally-grid   { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .tally-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  #tallyGridsWrap.no-session { opacity:.4; pointer-events:none; filter:grayscale(.6); }
   .tally-item {
     background:var(--white); border:2px solid var(--border); border-radius:var(--radius);
     padding:20px 12px 16px; text-align:center; display:flex; flex-direction:column;
@@ -242,6 +243,7 @@
 
   <div class="info-pill">Tap <strong>+</strong> to build the order, then <strong>swipe to confirm</strong> and charge the customer.</div>
 
+  <div id="tallyGridsWrap">
   <div class="tally-grid">
     <div class="tally-item" id="ti-coldmt">
       <div class="tally-label">Cold MT Cup</div>
@@ -291,6 +293,7 @@
         <button class="tally-btn plus"  onclick="adjustPending('ltbottle', 1)">+</button>
       </div>
     </div>
+  </div>
   </div>
 
   <div class="card mt-16" id="confirmCard" style="display:none;">
@@ -717,16 +720,19 @@ function refreshSessionUI() {
   const startCard = document.getElementById('sessionStartCard');
   const pill      = document.getElementById('sessionPill');
   const warn      = document.getElementById('noSessionWarning');
+  const grids     = document.getElementById('tallyGridsWrap');
   if (session.marketRow) {
     startCard.style.display = 'none';
     pill.style.display = 'flex';
     warn.style.display = 'none';
+    grids.classList.remove('no-session');
     document.getElementById('sp-name').textContent = session.marketName + ' — ' + session.marketDate;
     document.getElementById('sp-sub').textContent  = 'Till opened with $' + Number(session.openTillAmount).toFixed(2);
   } else {
     startCard.style.display = 'block';
     pill.style.display = 'none';
     warn.style.display = 'block';
+    grids.classList.add('no-session');
   }
 }
 
@@ -818,6 +824,10 @@ function hideCloseCards(){
 // TALLY — PENDING
 // ══════════════════════════════════════════════
 function adjustPending(key, delta) {
+  if (!session.marketRow) {
+    alert('Pick today\'s market and enter an opening float first — tap "Open Till & Start Selling" above. That\'s what lets this sale get tied to the right market.');
+    return;
+  }
   pending[key] = Math.max(0, pending[key]+delta);
   updateTallyUI();
   saveSession();
@@ -869,6 +879,13 @@ function updateTallyUI() {
 function confirmTally() {
   const total = KEYS.reduce((a,k)=>a+pending[k],0);
   if (total===0) return;
+  if (!session.marketRow) {
+    alert('No active market session — this sale can\'t be logged without one. Start Selling first.');
+    KEYS.forEach(k => pending[k]=0);
+    updateTallyUI();
+    resetSwipe();
+    return;
+  }
 
   lastConfirmedOrder = Object.assign({}, pending);
   lastConfirmedTotal = currentOrderTotal;
