@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Old Kennedy — Dashboard</title>
+<style>
+  :root {
+    --navy: #023863; --navy-dark: #012847; --navy-mid: #0A4F80;
+    --gold: #C9933A; --gold-light: #F5E6C8;
+    --white: #FFFFFF; --off-white: #F7F9FC;
+    --ink: #023863; --ink-mid: #3A6080; --ink-light: #7A9BB5;
+    --border: #C2D4E3;
+    --success: #1B5E35; --success-bg: #D4EDBC;
+    --warn-bg: #FFF3CD; --warn-text: #7B3F00;
+    --red: #B71C1C; --red-light: #FDECEA;
+    --radius: 14px; --radius-sm: 10px;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--off-white); color:var(--ink); min-height:100vh; padding-bottom:48px; }
+
+  .ok-nav { display:flex; gap:2px; background:var(--navy-dark); padding:0 12px; overflow-x:auto; }
+  .ok-nav-item { display:block; padding:8px 10px; font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:rgba(255,255,255,.45); text-decoration:none; white-space:nowrap; border-bottom:2px solid transparent; }
+  .ok-nav-item.active { color:var(--gold); border-bottom-color:var(--gold); }
+  .ok-nav-item.disabled { color:rgba(255,255,255,.25); cursor:default; }
+
+  .app-header { background:var(--navy); padding:16px 24px; border-bottom:3px solid var(--gold); }
+  .brand-name { font-size:20px; font-weight:800; color:var(--white); }
+  .brand-sub  { font-size:11px; color:var(--gold-light); letter-spacing:.08em; text-transform:uppercase; margin-top:2px; }
+
+  .container { max-width:960px; margin:0 auto; padding:20px 16px; }
+
+  .filter-bar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; align-items:center; }
+  .filter-group { display:flex; gap:6px; background:var(--white); border:2px solid var(--border); border-radius:var(--radius-sm); padding:4px; }
+  .filter-btn { padding:8px 14px; border:none; background:none; border-radius:8px; font-size:13px; font-weight:700; color:var(--ink-mid); cursor:pointer; }
+  .filter-btn.active { background:var(--navy); color:var(--white); }
+  .filter-btn.disabled { color:var(--ink-light); opacity:.5; cursor:default; }
+
+  .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:24px; }
+  .kpi-card { background:var(--white); border:2px solid var(--border); border-radius:var(--radius); padding:16px 18px; }
+  .kpi-label { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-light); margin-bottom:8px; }
+  .kpi-value { font-size:28px; font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums; }
+  .kpi-sub { font-size:12px; color:var(--ink-light); margin-top:4px; }
+
+  .section { background:var(--white); border:2px solid var(--border); border-radius:var(--radius); padding:18px 20px; margin-bottom:16px; }
+  .section-title { font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--navy); margin-bottom:14px; }
+
+  .compare-row, .upcoming-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); gap:12px; }
+  .compare-row:last-child, .upcoming-row:last-child { border-bottom:none; }
+  .cr-name { font-size:14px; font-weight:700; color:var(--navy); }
+  .cr-date { font-size:12px; color:var(--ink-light); }
+  .cr-right { text-align:right; }
+  .cr-total { font-size:15px; font-weight:800; color:var(--navy); }
+  .cr-net { font-size:12px; color:var(--ink-light); }
+
+  .badge { font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; white-space:nowrap; }
+  .badge.low    { background:var(--off-white); color:var(--ink-light); }
+  .badge.medium { background:var(--warn-bg); color:var(--warn-text); }
+  .badge.high   { background:var(--success-bg); color:var(--success); }
+  .badge.none   { background:var(--off-white); color:var(--ink-light); }
+
+  .empty-state { text-align:center; padding:32px 16px; color:var(--ink-light); font-size:14px; }
+  .error-pill { background:var(--red-light); border:2px solid var(--red); border-radius:var(--radius-sm); padding:14px 16px; color:var(--red); font-size:14px; font-weight:600; }
+</style>
+</head>
+<body>
+
+<nav class="ok-nav" aria-label="Old Kennedy platform">
+  <a class="ok-nav-item" href="index.html">Markets</a>
+  <span class="ok-nav-item disabled">Pre-orders</span>
+  <span class="ok-nav-item disabled">Store</span>
+  <span class="ok-nav-item disabled">Management</span>
+  <a class="ok-nav-item active" href="dashboard.html">Dashboard</a>
+</nav>
+
+<header class="app-header">
+  <div class="brand-name">Old Kennedy</div>
+  <div class="brand-sub">Dashboard</div>
+</header>
+
+<div class="container">
+
+  <div class="filter-bar">
+    <div class="filter-group" role="group" aria-label="Channel">
+      <button class="filter-btn active" id="chan-all" onclick="setChannel('all')">All channels</button>
+      <button class="filter-btn" id="chan-market" onclick="setChannel('market')">Markets</button>
+      <button class="filter-btn disabled" disabled title="Not built yet">Pre-orders</button>
+      <button class="filter-btn disabled" disabled title="Not built yet">Store</button>
+    </div>
+    <div class="filter-group" role="group" aria-label="Time period">
+      <button class="filter-btn active" id="period-90" onclick="setPeriod(90)">Last 90 days</button>
+      <button class="filter-btn" id="period-all" onclick="setPeriod(0)">All time</button>
+    </div>
+  </div>
+
+  <div id="loadingState" class="empty-state">Loading your data…</div>
+  <div id="errorState" style="display:none;"></div>
+
+  <div id="dashboardContent" style="display:none;">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Revenue, selected period</div>
+        <div class="kpi-value" id="kpi-revenue">$0.00</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Sales logged, all time</div>
+        <div class="kpi-value" id="kpi-txns">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Avg revenue per market</div>
+        <div class="kpi-value" id="kpi-avg">$0.00</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Markets booked next</div>
+        <div class="kpi-value" id="kpi-upcoming">0</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Revenue over time</div>
+      <div id="revenueEmpty" class="empty-state" style="display:none;">No completed markets in this period yet.</div>
+      <div style="position:relative; width:100%; height:240px;"><canvas id="revenueChart"></canvas></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Product mix</div>
+      <div id="mixEmpty" class="empty-state" style="display:none;">No units sold in this period yet.</div>
+      <div style="position:relative; width:100%; height:200px;"><canvas id="mixChart"></canvas></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Market comparison</div>
+      <div id="compareEmpty" class="empty-state" style="display:none;">Nothing to compare yet — this fills in as markets close out through the Tally app.</div>
+      <div id="compareList"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Upcoming markets</div>
+      <div id="upcomingEmpty" class="empty-state" style="display:none;">No upcoming markets found in the sheet.</div>
+      <div id="upcomingList"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const CONFIG = {
+  BACKEND_URL: 'https://script.google.com/macros/s/AKfycbzW5T59GhbfgkZGGgbQeYXJ5Ln2TJsAGxmqOrpDFzJvmubvHibz5XUPNffBiKVMXn7C/exec',
+  API_KEY:     'oldkennedy-2026-key',                       // must match Code.gs
+};
+
+let rawData = null;
+let currentChannel = 'all';
+let currentPeriodDays = 90;
+let revenueChartInstance = null;
+let mixChartInstance = null;
+
+function setChannel(ch) {
+  currentChannel = ch;
+  document.getElementById('chan-all').classList.toggle('active', ch==='all');
+  document.getElementById('chan-market').classList.toggle('active', ch==='market');
+  render();
+}
+function setPeriod(days) {
+  currentPeriodDays = days;
+  document.getElementById('period-90').classList.toggle('active', days===90);
+  document.getElementById('period-all').classList.toggle('active', days===0);
+  render();
+}
+
+function fmtMoney(n) { return '$' + (Math.round(n*100)/100).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function filteredHistory() {
+  if (!rawData) return [];
+  let rows = rawData.history;
+  if (currentChannel !== 'all') rows = rows.filter(r => r.channel === currentChannel);
+  if (currentPeriodDays > 0) {
+    const cutoff = new Date(); cutoff.setHours(0,0,0,0); cutoff.setDate(cutoff.getDate() - currentPeriodDays);
+    rows = rows.filter(r => new Date(r.date) >= cutoff);
+  }
+  return rows;
+}
+
+function render() {
+  const rows = filteredHistory();
+
+  const totalRevenue = rows.reduce((a,r)=>a+r.revenue.total, 0);
+  document.getElementById('kpi-revenue').textContent = fmtMoney(totalRevenue);
+  document.getElementById('kpi-txns').textContent = rawData.totalTransactions;
+  document.getElementById('kpi-avg').textContent = fmtMoney(rows.length ? totalRevenue/rows.length : 0);
+  document.getElementById('kpi-upcoming').textContent = rawData.upcoming.length;
+
+  // Revenue trend — grouped by month
+  const byMonth = {};
+  rows.forEach(r => {
+    const m = r.date.slice(0,7); // yyyy-MM
+    byMonth[m] = (byMonth[m]||0) + r.revenue.total;
+  });
+  const months = Object.keys(byMonth).sort();
+  document.getElementById('revenueEmpty').style.display = months.length ? 'none' : 'block';
+  if (revenueChartInstance) revenueChartInstance.destroy();
+  revenueChartInstance = new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: { labels: months, datasets: [{ data: months.map(m=>Math.round(byMonth[m]*100)/100), borderColor:'#023863', backgroundColor:'rgba(2,56,99,0.08)', fill:true, tension:0.3, pointRadius:3, pointBackgroundColor:'#C9933A' }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'$'+v } } } },
+  });
+
+  // Product mix
+  const mix = { coldmt:0, hotmt:0, lemon:0, mtbottle:0, ltbottle:0 };
+  rows.forEach(r => { Object.keys(mix).forEach(k => mix[k]+=r.units[k]||0); });
+  const mixLabels = ['Cold MT','Hot MT','Lemon Tea','MT Bottles','LT Bottles'];
+  const mixValues = [mix.coldmt, mix.hotmt, mix.lemon, mix.mtbottle, mix.ltbottle];
+  document.getElementById('mixEmpty').style.display = mixValues.some(v=>v>0) ? 'none' : 'block';
+  if (mixChartInstance) mixChartInstance.destroy();
+  mixChartInstance = new Chart(document.getElementById('mixChart'), {
+    type: 'bar',
+    data: { labels: mixLabels, datasets: [{ data: mixValues, backgroundColor:'#0A4F80', borderRadius:4 }] },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ beginAtZero:true } } },
+  });
+
+  // Market comparison — most recent first
+  const compareList = document.getElementById('compareList');
+  const sorted = rows.slice().sort((a,b)=> a.date < b.date ? 1 : -1);
+  document.getElementById('compareEmpty').style.display = sorted.length ? 'none' : 'block';
+  compareList.innerHTML = sorted.map(r => {
+    const net = r.revenue.total - r.fees.total;
+    const trafficClass = (r.traffic||'').toLowerCase() || 'none';
+    return '<div class="compare-row">'
+      + '<div><div class="cr-name">'+r.name+'</div><div class="cr-date">'+r.date+(r.location?' &middot; '+r.location:'')+'</div></div>'
+      + '<span class="badge '+trafficClass+'">'+(r.traffic||'No data')+'</span>'
+      + '<div class="cr-right"><div class="cr-total">'+fmtMoney(r.revenue.total)+'</div><div class="cr-net">net '+fmtMoney(net)+'</div></div>'
+      + '</div>';
+  }).join('');
+
+  // Upcoming
+  const upcomingList = document.getElementById('upcomingList');
+  document.getElementById('upcomingEmpty').style.display = rawData.upcoming.length ? 'none' : 'block';
+  const today = new Date(); today.setHours(0,0,0,0);
+  upcomingList.innerHTML = rawData.upcoming.map(m => {
+    const d = new Date(m.date);
+    const days = Math.round((d-today)/86400000);
+    return '<div class="upcoming-row">'
+      + '<div><div class="cr-name">'+m.name+'</div><div class="cr-date">'+m.date+' &middot; in '+days+' day'+(days===1?'':'s')+'</div></div>'
+      + '<div class="cr-right"><div class="cr-total">'+fmtMoney(m.insurance+m.boothFee)+' due</div></div>'
+      + '</div>';
+  }).join('');
+}
+
+async function loadDashboard() {
+  try {
+    const url = new URL(CONFIG.BACKEND_URL);
+    url.searchParams.set('action', 'getDashboardData');
+    url.searchParams.set('key', CONFIG.API_KEY);
+    const data = await fetch(url.toString()).then(r=>r.json());
+    if (!data.ok) throw new Error(data.error || 'Unknown error');
+    rawData = data;
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('dashboardContent').style.display = 'block';
+    render();
+  } catch (e) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+    document.getElementById('errorState').innerHTML = '<div class="error-pill">Could not load dashboard data. Check that BACKEND_URL is set correctly and matches Code.gs. (' + (e.message||e) + ')</div>';
+  }
+}
+
+loadDashboard();
+</script>
+</body>
+</html>
