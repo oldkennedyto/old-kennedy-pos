@@ -64,15 +64,25 @@
 
   .section-title-row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; flex-wrap:wrap; gap:6px; }
   .section-sub { font-size:11px; font-weight:600; text-transform:none; letter-spacing:0; color:var(--ink-light); }
-  .summary-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px; }
-  .summary-card { border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; }
-  .summary-card-title { font-size:12px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--navy); margin-bottom:8px; }
-  .summary-table { width:100%; border-collapse:collapse; font-size:13px; }
-  .summary-table th { text-align:right; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-light); padding:4px 6px; }
-  .summary-table th:first-child { text-align:left; }
-  .summary-table td { padding:6px; border-top:1px solid var(--off-white); text-align:right; font-variant-numeric:tabular-nums; }
-  .summary-table td.sm-label { text-align:left; color:var(--ink-mid); font-weight:600; }
-  .summary-table td.sm-single { text-align:right; font-weight:700; color:var(--navy); }
+  /* align-items:start is the key fix — without it, CSS Grid stretches every
+     card in a row to match the tallest one, which is why short cards like
+     Net Profit / Pre-Orders had a huge empty gap underneath. */
+  .summary-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:14px; align-items:start; }
+  .summary-card { border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; }
+  .summary-card-title { font-size:12px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--navy); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--off-white); }
+
+  /* Fixed-width value columns via CSS Grid rows, instead of a <table> —
+     a table's column widths shift row-to-row based on content, which is
+     what made wrapped multi-line labels throw off number alignment. */
+  .summary-header, .summary-row { display:grid; grid-template-columns:1fr 66px 66px 66px; column-gap:8px; align-items:start; }
+  .summary-header { padding:0 0 6px; }
+  .summary-header span { font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-light); text-align:right; }
+  .summary-row { padding:8px 0; border-top:1px solid var(--off-white); }
+  .summary-row:first-of-type { border-top:none; }
+  .sm-label { color:var(--ink-mid); font-weight:600; font-size:13px; line-height:1.35; }
+  .sm-val { text-align:right; font-variant-numeric:tabular-nums; font-size:13px; color:var(--navy); font-weight:700; padding-top:1px; }
+  .sm-val.sm-blank { color:var(--ink-light); font-weight:400; }
+  .sm-val.sm-dash { color:var(--border); }
   .explorer-label { font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-light); margin:28px 0 10px; }
 </style>
 </head>
@@ -201,9 +211,14 @@ function fmtMoney(n) { return '$' + (Math.round(n*100)/100).toLocaleString(undef
 function isCountMetric(label) {
   return /attended|placed|visits|items low|need reorder|out of stock/i.test(label);
 }
-function fmtSummaryVal(label, v) {
-  if (v === null || v === undefined) return '—';
-  return isCountMetric(label) ? Math.round(v).toLocaleString() : fmtMoney(v);
+// Renders one value cell. `blank` = true means the sheet has no formula
+// output for this slot at all (single-value metrics leave QTD/YTD empty
+// on purpose) — that's rendered as quiet empty space, not a dash, so it
+// doesn't read as "missing data."
+function summaryCell(label, v, blank) {
+  if (blank) return '<span class="sm-val"></span>';
+  if (v === null || v === undefined) return '<span class="sm-val sm-dash">–</span>';
+  return '<span class="sm-val">' + (isCountMetric(label) ? Math.round(v).toLocaleString() : fmtMoney(v)) + '</span>';
 }
 
 function renderSummary(sections, asOf) {
@@ -221,16 +236,25 @@ function renderSummary(sections, asOf) {
 
   grid.innerHTML = sections.map(sec => {
     const rows = sec.metrics.map(m => {
-      const allThree = m.mtd !== null && m.qtd !== null && m.ytd !== null;
-      if (allThree) {
-        return '<tr><td class="sm-label">'+m.label+'</td><td>'+fmtSummaryVal(m.label,m.mtd)+'</td><td>'+fmtSummaryVal(m.label,m.qtd)+'</td><td>'+fmtSummaryVal(m.label,m.ytd)+'</td></tr>';
-      }
-      const val = m.mtd !== null ? m.mtd : (m.qtd !== null ? m.qtd : m.ytd);
-      return '<tr><td class="sm-label">'+m.label+'</td><td colspan="3" class="sm-single">'+fmtSummaryVal(m.label,val)+'</td></tr>';
+      // Metrics with all three periods render normally. Single-value
+      // metrics (Shareholder Loan, Inventory Health, Pre-Orders
+      // Outstanding) only ever populate the sheet's MTD-position cell —
+      // show that one value and leave QTD/YTD visually empty instead of
+      // implying two more numbers are simply missing.
+      const isSingleValue = !(m.qtd !== null || m.ytd !== null);
+      const qtdCell = isSingleValue ? summaryCell(m.label, null, true) : summaryCell(m.label, m.qtd, false);
+      const ytdCell = isSingleValue ? summaryCell(m.label, null, true) : summaryCell(m.label, m.ytd, false);
+      return '<div class="summary-row">'
+        + '<span class="sm-label">'+m.label+'</span>'
+        + summaryCell(m.label, m.mtd, false)
+        + qtdCell
+        + ytdCell
+        + '</div>';
     }).join('');
     return '<div class="summary-card">'
       + '<div class="summary-card-title">'+sec.title+'</div>'
-      + '<table class="summary-table"><thead><tr><th></th><th>MTD</th><th>QTD</th><th>YTD</th></tr></thead><tbody>'+rows+'</tbody></table>'
+      + '<div class="summary-header"><span></span><span>MTD</span><span>QTD</span><span>YTD</span></div>'
+      + rows
       + '</div>';
   }).join('');
 }
