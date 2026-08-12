@@ -61,6 +61,19 @@
 
   .empty-state { text-align:center; padding:32px 16px; color:var(--ink-light); font-size:14px; }
   .error-pill { background:var(--red-light); border:2px solid var(--red); border-radius:var(--radius-sm); padding:14px 16px; color:var(--red); font-size:14px; font-weight:600; }
+
+  .section-title-row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; flex-wrap:wrap; gap:6px; }
+  .section-sub { font-size:11px; font-weight:600; text-transform:none; letter-spacing:0; color:var(--ink-light); }
+  .summary-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px; }
+  .summary-card { border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; }
+  .summary-card-title { font-size:12px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--navy); margin-bottom:8px; }
+  .summary-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .summary-table th { text-align:right; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-light); padding:4px 6px; }
+  .summary-table th:first-child { text-align:left; }
+  .summary-table td { padding:6px; border-top:1px solid var(--off-white); text-align:right; font-variant-numeric:tabular-nums; }
+  .summary-table td.sm-label { text-align:left; color:var(--ink-mid); font-weight:600; }
+  .summary-table td.sm-single { text-align:right; font-weight:700; color:var(--navy); }
+  .explorer-label { font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-light); margin:28px 0 10px; }
 </style>
 </head>
 <body>
@@ -80,23 +93,35 @@
 
 <div class="container">
 
-  <div class="filter-bar">
-    <div class="filter-group" role="group" aria-label="Channel">
-      <button class="filter-btn active" id="chan-all" onclick="setChannel('all')">All channels</button>
-      <button class="filter-btn" id="chan-market" onclick="setChannel('market')">Markets</button>
-      <button class="filter-btn disabled" disabled title="Not built yet">Pre-orders</button>
-      <button class="filter-btn disabled" disabled title="Not built yet">Store</button>
-    </div>
-    <div class="filter-group" role="group" aria-label="Time period">
-      <button class="filter-btn active" id="period-90" onclick="setPeriod(90)">Last 90 days</button>
-      <button class="filter-btn" id="period-all" onclick="setPeriod(0)">All time</button>
-    </div>
-  </div>
-
   <div id="loadingState" class="empty-state">Loading your data…</div>
   <div id="errorState" style="display:none;"></div>
 
   <div id="dashboardContent" style="display:none;">
+
+    <div class="section" id="summarySection">
+      <div class="section-title-row">
+        <div class="section-title" style="margin-bottom:0;">Business summary <span class="section-sub">— mirrors the sheet's Dashboard tab exactly</span></div>
+        <div id="summaryAsOf" class="cr-date"></div>
+      </div>
+      <div id="summaryEmpty" class="empty-state" style="display:none;"></div>
+      <div id="summaryGrid" class="summary-grid"></div>
+    </div>
+
+    <div class="explorer-label">Filtered explorer — Market channel only</div>
+
+    <div class="filter-bar">
+      <div class="filter-group" role="group" aria-label="Channel">
+        <button class="filter-btn active" id="chan-all" onclick="setChannel('all')">All channels</button>
+        <button class="filter-btn" id="chan-market" onclick="setChannel('market')">Markets</button>
+        <button class="filter-btn disabled" disabled title="Not built yet">Pre-orders</button>
+        <button class="filter-btn disabled" disabled title="Not built yet">Store</button>
+      </div>
+      <div class="filter-group" role="group" aria-label="Time period">
+        <button class="filter-btn active" id="period-90" onclick="setPeriod(90)">Last 90 days</button>
+        <button class="filter-btn" id="period-all" onclick="setPeriod(0)">All time</button>
+      </div>
+    </div>
+
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-label">Revenue, selected period</div>
@@ -170,6 +195,45 @@ function setPeriod(days) {
 }
 
 function fmtMoney(n) { return '$' + (Math.round(n*100)/100).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+// Metrics that are counts, not dollar amounts — everything else in the
+// native Dashboard tab is a currency figure.
+function isCountMetric(label) {
+  return /attended|placed|visits|items low|need reorder|out of stock/i.test(label);
+}
+function fmtSummaryVal(label, v) {
+  if (v === null || v === undefined) return '—';
+  return isCountMetric(label) ? Math.round(v).toLocaleString() : fmtMoney(v);
+}
+
+function renderSummary(sections, asOf) {
+  const grid = document.getElementById('summaryGrid');
+  const empty = document.getElementById('summaryEmpty');
+  document.getElementById('summaryAsOf').textContent = asOf ? ('as of ' + asOf) : '';
+
+  if (!sections || !sections.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    empty.textContent = 'Dashboard tab not found or empty — check that the sheet still has a tab named exactly "Dashboard".';
+    return;
+  }
+  empty.style.display = 'none';
+
+  grid.innerHTML = sections.map(sec => {
+    const rows = sec.metrics.map(m => {
+      const allThree = m.mtd !== null && m.qtd !== null && m.ytd !== null;
+      if (allThree) {
+        return '<tr><td class="sm-label">'+m.label+'</td><td>'+fmtSummaryVal(m.label,m.mtd)+'</td><td>'+fmtSummaryVal(m.label,m.qtd)+'</td><td>'+fmtSummaryVal(m.label,m.ytd)+'</td></tr>';
+      }
+      const val = m.mtd !== null ? m.mtd : (m.qtd !== null ? m.qtd : m.ytd);
+      return '<tr><td class="sm-label">'+m.label+'</td><td colspan="3" class="sm-single">'+fmtSummaryVal(m.label,val)+'</td></tr>';
+    }).join('');
+    return '<div class="summary-card">'
+      + '<div class="summary-card-title">'+sec.title+'</div>'
+      + '<table class="summary-table"><thead><tr><th></th><th>MTD</th><th>QTD</th><th>YTD</th></tr></thead><tbody>'+rows+'</tbody></table>'
+      + '</div>';
+  }).join('');
+}
 
 function filteredHistory() {
   if (!rawData) return [];
@@ -249,14 +313,32 @@ function render() {
 
 async function loadDashboard() {
   try {
-    const url = new URL(CONFIG.BACKEND_URL);
-    url.searchParams.set('action', 'getDashboardData');
-    url.searchParams.set('key', CONFIG.API_KEY);
-    const data = await fetch(url.toString()).then(r=>r.json());
+    const dataUrl = new URL(CONFIG.BACKEND_URL);
+    dataUrl.searchParams.set('action', 'getDashboardData');
+    dataUrl.searchParams.set('key', CONFIG.API_KEY);
+
+    const summaryUrl = new URL(CONFIG.BACKEND_URL);
+    summaryUrl.searchParams.set('action', 'getDashboardSummary');
+    summaryUrl.searchParams.set('key', CONFIG.API_KEY);
+
+    const [data, summary] = await Promise.all([
+      fetch(dataUrl.toString()).then(r=>r.json()),
+      fetch(summaryUrl.toString()).then(r=>r.json()),
+    ]);
     if (!data.ok) throw new Error(data.error || 'Unknown error');
     rawData = data;
+
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('dashboardContent').style.display = 'block';
+
+    if (summary.ok) {
+      renderSummary(summary.sections, summary.asOf);
+    } else {
+      document.getElementById('summaryGrid').innerHTML = '';
+      document.getElementById('summaryEmpty').style.display = 'block';
+      document.getElementById('summaryEmpty').textContent = 'Could not load business summary: ' + (summary.error || 'unknown error');
+    }
+
     render();
   } catch (e) {
     document.getElementById('loadingState').style.display = 'none';
