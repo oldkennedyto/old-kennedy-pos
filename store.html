@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Old Kennedy — Store</title>
+<style>
+  :root {
+    --navy: #023863; --navy-dark: #012847; --navy-mid: #0A4F80;
+    --gold: #C9933A; --gold-light: #F5E6C8;
+    --white: #FFFFFF; --off-white: #F7F9FC;
+    --ink: #023863; --ink-mid: #3A6080; --ink-light: #7A9BB5;
+    --border: #C2D4E3;
+    --success: #1B5E35; --success-bg: #D4EDBC;
+    --warn-bg: #FFF3CD; --warn-text: #7B3F00;
+    --red: #B71C1C; --red-light: #FDECEA;
+    --radius: 14px; --radius-sm: 10px;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--off-white); color:var(--ink); min-height:100vh; padding-bottom:48px; }
+
+  .ok-nav { display:flex; gap:2px; background:var(--navy-dark); padding:0 12px; overflow-x:auto; }
+  .ok-nav-item { display:block; padding:8px 10px; font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:rgba(255,255,255,.45); text-decoration:none; white-space:nowrap; border-bottom:2px solid transparent; }
+  .ok-nav-item.active { color:var(--gold); border-bottom-color:var(--gold); }
+  .ok-nav-item.disabled { color:rgba(255,255,255,.25); cursor:default; }
+
+  .app-header { background:var(--navy); padding:16px 24px; border-bottom:3px solid var(--gold); }
+  .brand-name { font-size:20px; font-weight:800; color:var(--white); }
+  .brand-sub  { font-size:11px; color:var(--gold-light); letter-spacing:.08em; text-transform:uppercase; margin-top:2px; }
+
+  .container { max-width:960px; margin:0 auto; padding:20px 16px; }
+
+  .filter-bar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; align-items:center; }
+  .filter-group { display:flex; gap:6px; background:var(--white); border:2px solid var(--border); border-radius:var(--radius-sm); padding:4px; }
+  .filter-btn { padding:8px 14px; border:none; background:none; border-radius:8px; font-size:13px; font-weight:700; color:var(--ink-mid); cursor:pointer; }
+  .filter-btn.active { background:var(--navy); color:var(--white); }
+
+  .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:24px; }
+  .kpi-card { background:var(--white); border:2px solid var(--border); border-radius:var(--radius); padding:16px 18px; }
+  .kpi-card.flag-good { border-color:var(--success); }
+  .kpi-card.flag-warn { border-color:var(--warn-text); }
+  .kpi-label { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-light); margin-bottom:8px; }
+  .kpi-value { font-size:28px; font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums; }
+  .kpi-sub { font-size:12px; color:var(--ink-light); margin-top:4px; }
+  .kpi-sub.flag-good { color:var(--success); font-weight:700; }
+  .kpi-sub.flag-warn { color:var(--warn-text); font-weight:700; }
+
+  .section { background:var(--white); border:2px solid var(--border); border-radius:var(--radius); padding:18px 20px; margin-bottom:16px; }
+  .section-title { font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--navy); margin-bottom:14px; }
+  .section-sub { font-size:11px; font-weight:600; text-transform:none; letter-spacing:0; color:var(--ink-light); }
+
+  .badge { font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; white-space:nowrap; display:inline-block; }
+  .badge.good { background:var(--success-bg); color:var(--success); }
+  .badge.warn { background:var(--warn-bg); color:var(--warn-text); }
+  .badge.neutral { background:var(--off-white); color:var(--ink-light); }
+
+  .empty-state { text-align:center; padding:32px 16px; color:var(--ink-light); font-size:14px; }
+  .error-pill { background:var(--red-light); border:2px solid var(--red); border-radius:var(--radius-sm); padding:14px 16px; color:var(--red); font-size:14px; font-weight:600; }
+
+  .cycle-row { display:flex; justify-content:space-between; align-items:flex-start; padding:14px 0; border-bottom:1px solid var(--border); gap:12px; flex-wrap:wrap; }
+  .cycle-row:last-child { border-bottom:none; }
+  .cycle-main { flex:1; min-width:200px; }
+  .cycle-partner { font-size:14px; font-weight:700; color:var(--navy); }
+  .cycle-dates { font-size:12px; color:var(--ink-light); margin-top:2px; }
+  .cycle-notes { font-size:12px; color:var(--ink-mid); margin-top:4px; font-style:italic; }
+  .cycle-stats { display:flex; gap:18px; flex-wrap:wrap; }
+  .cycle-stat { text-align:right; }
+  .cycle-stat-label { font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-light); }
+  .cycle-stat-val { font-size:14px; font-weight:700; color:var(--navy); font-variant-numeric:tabular-nums; }
+
+  .cadence-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); gap:10px; }
+  .cadence-row:last-child { border-bottom:none; }
+  .cadence-left { font-size:13px; color:var(--ink-mid); }
+  .cadence-left b { color:var(--navy); }
+</style>
+</head>
+<body>
+
+<nav class="ok-nav" aria-label="Old Kennedy platform">
+  <a class="ok-nav-item" href="index.html">Markets</a>
+  <span class="ok-nav-item disabled">Pre-orders</span>
+  <a class="ok-nav-item active" href="store.html">Store</a>
+  <span class="ok-nav-item disabled">Management</span>
+  <a class="ok-nav-item" href="dashboard.html">Dashboard</a>
+</nav>
+
+<header class="app-header">
+  <div class="brand-name">Old Kennedy</div>
+  <div class="brand-sub">Store &middot; Retail Partners</div>
+</header>
+
+<div class="container">
+
+  <div id="loadingState" class="empty-state">Loading store data…</div>
+  <div id="errorState" style="display:none;"></div>
+
+  <div id="storeContent" style="display:none;">
+
+    <div class="filter-bar" id="partnerFilterBar" style="display:none;"></div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card" id="kpi-mtweek-card">
+        <div class="kpi-label">MT bottles/week, last cycle</div>
+        <div class="kpi-value" id="kpi-mtweek">–</div>
+        <div class="kpi-sub" id="kpi-mtweek-sub">Target: 8/week from a single pot</div>
+      </div>
+      <div class="kpi-card" id="kpi-price-card">
+        <div class="kpi-label">Avg price realized, last cycle</div>
+        <div class="kpi-value" id="kpi-price">–</div>
+        <div class="kpi-sub" id="kpi-price-sub">Target: $6.00/bottle</div>
+      </div>
+      <div class="kpi-card" id="kpi-lt-card">
+        <div class="kpi-label">LT bottles, last cycle</div>
+        <div class="kpi-value" id="kpi-lt">–</div>
+        <div class="kpi-sub" id="kpi-lt-sub"></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total store revenue</div>
+        <div class="kpi-value" id="kpi-revenue">$0.00</div>
+        <div class="kpi-sub" id="kpi-revenue-sub"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Price realized per bottle, by cycle <span class="section-sub">— dashed line is your $6 target</span></div>
+      <div id="priceEmpty" class="empty-state" style="display:none;">No settled cycles yet.</div>
+      <div style="position:relative; width:100%; height:220px;"><canvas id="priceChart"></canvas></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Sell-through by category <span class="section-sub">— bottles sold ÷ bottles supplied, across all settled cycles</span></div>
+      <div id="sellThroughEmpty" class="empty-state" style="display:none;">No settled cycles yet.</div>
+      <div style="position:relative; width:100%; height:160px;"><canvas id="sellThroughChart"></canvas></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Weekly supply cadence <span class="section-sub">— MT pace vs. your 8/week commitment; flags cycles you didn't supply LT</span></div>
+      <div id="cadenceEmpty" class="empty-state" style="display:none;">No cycles yet.</div>
+      <div id="cadenceList"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Restock &amp; settlement log</div>
+      <div id="logEmpty" class="empty-state" style="display:none;">No restock cycles logged yet.</div>
+      <div id="logList"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const CONFIG = {
+  BACKEND_URL: 'https://script.google.com/macros/s/AKfycbzW5T59GhbfgkZGGgbQeYXJ5Ln2TJsAGxmqOrpDFzJvmubvHibz5XUPNffBiKVMXn7C/exec',
+  API_KEY:     'oldkennedy-2026-key',                       // must match Code.gs
+};
+
+let rawCycles = [];
+let targets = { weeklyMtTarget: 8, priceTarget: 6 };
+let currentPartner = 'all';
+let priceChartInstance = null;
+let sellThroughChartInstance = null;
+
+function fmtMoney(n) { return '$' + (Math.round(n*100)/100).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtPct(n) { return Math.round(n*100) + '%'; }
+
+function filteredCycles() {
+  let rows = rawCycles;
+  if (currentPartner !== 'all') rows = rows.filter(c => c.partner === currentPartner);
+  return rows;
+}
+
+function setPartner(p) {
+  currentPartner = p;
+  document.querySelectorAll('#partnerFilterBar .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.partner === p));
+  render();
+}
+
+function renderPartnerFilter() {
+  const partners = Array.from(new Set(rawCycles.map(c => c.partner))).filter(Boolean);
+  const bar = document.getElementById('partnerFilterBar');
+  if (partners.length <= 1) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  const group = document.createElement('div');
+  group.className = 'filter-group';
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', 'Store partner');
+  group.innerHTML = '<button class="filter-btn active" data-partner="all" onclick="setPartner(\'all\')">All partners</button>'
+    + partners.map(p => '<button class="filter-btn" data-partner="'+p+'" onclick="setPartner(\''+p+'\')">'+p+'</button>').join('');
+  bar.innerHTML = '';
+  bar.appendChild(group);
+}
+
+function render() {
+  const cycles = filteredCycles();
+  const settled = cycles.filter(c => c.settled);
+  const sortedDesc = cycles.slice().sort((a,b) => a.restockDate < b.restockDate ? 1 : -1);
+  const lastSettled = settled.slice().sort((a,b) => a.restockDate < b.restockDate ? 1 : -1)[0];
+
+  // KPI: MT bottles/week, last cycle
+  const mtWeekCard = document.getElementById('kpi-mtweek-card');
+  const mtWeekSub = document.getElementById('kpi-mtweek-sub');
+  if (lastSettled && lastSettled.mt.perWeek !== null) {
+    document.getElementById('kpi-mtweek').textContent = lastSettled.mt.perWeek.toFixed(1);
+    const below = lastSettled.mt.belowWeeklyTarget;
+    mtWeekCard.className = 'kpi-card ' + (below ? 'flag-warn' : 'flag-good');
+    mtWeekSub.className = 'kpi-sub ' + (below ? 'flag-warn' : 'flag-good');
+    mtWeekSub.textContent = (below ? 'Below your 8/week commitment' : 'At or above your 8/week commitment');
+  } else {
+    document.getElementById('kpi-mtweek').textContent = '–';
+    mtWeekCard.className = 'kpi-card';
+    mtWeekSub.className = 'kpi-sub';
+    mtWeekSub.textContent = 'No settled cycle yet';
+  }
+
+  // KPI: avg price realized, last cycle
+  const priceCard = document.getElementById('kpi-price-card');
+  const priceSub = document.getElementById('kpi-price-sub');
+  if (lastSettled && lastSettled.avgPriceRealized !== null) {
+    document.getElementById('kpi-price').textContent = fmtMoney(lastSettled.avgPriceRealized);
+    const below = lastSettled.belowPriceTarget;
+    priceCard.className = 'kpi-card ' + (below ? 'flag-warn' : 'flag-good');
+    priceSub.className = 'kpi-sub ' + (below ? 'flag-warn' : 'flag-good');
+    priceSub.textContent = (below ? 'Below your $6.00 target' : 'At or above your $6.00 target');
+  } else {
+    document.getElementById('kpi-price').textContent = '–';
+    priceCard.className = 'kpi-card';
+    priceSub.className = 'kpi-sub';
+    priceSub.textContent = 'No settled cycle yet';
+  }
+
+  // KPI: LT bottles, last cycle
+  const ltCard = document.getElementById('kpi-lt-card');
+  const ltSub = document.getElementById('kpi-lt-sub');
+  if (lastSettled) {
+    document.getElementById('kpi-lt').textContent = lastSettled.lt.dropped;
+    if (!lastSettled.lt.supplied) {
+      ltCard.className = 'kpi-card flag-warn';
+      ltSub.className = 'kpi-sub flag-warn';
+      ltSub.textContent = 'Not supplied this cycle';
+    } else {
+      ltCard.className = 'kpi-card';
+      ltSub.className = 'kpi-sub';
+      ltSub.textContent = lastSettled.lt.sellThroughPct !== null ? fmtPct(lastSettled.lt.sellThroughPct) + ' sold through' : '';
+    }
+  } else {
+    document.getElementById('kpi-lt').textContent = '–';
+    ltCard.className = 'kpi-card';
+    ltSub.className = 'kpi-sub';
+    ltSub.textContent = '';
+  }
+
+  // KPI: total revenue
+  const totalRevenue = settled.reduce((a,c) => a + c.revenue.total, 0);
+  document.getElementById('kpi-revenue').textContent = fmtMoney(totalRevenue);
+  document.getElementById('kpi-revenue-sub').textContent = settled.length + ' settled cycle' + (settled.length===1?'':'s');
+
+  // Price chart
+  const priceSorted = settled.slice().sort((a,b) => a.restockDate < b.restockDate ? -1 : 1);
+  document.getElementById('priceEmpty').style.display = priceSorted.length ? 'none' : 'block';
+  if (priceChartInstance) priceChartInstance.destroy();
+  priceChartInstance = new Chart(document.getElementById('priceChart'), {
+    type: 'line',
+    data: {
+      labels: priceSorted.map(c => c.restockDate),
+      datasets: [
+        { label:'Avg price realized', data: priceSorted.map(c => c.avgPriceRealized), borderColor:'#023863', backgroundColor:'rgba(2,56,99,0.08)', fill:true, tension:0.3, pointRadius:4, pointBackgroundColor:'#C9933A' },
+        { label:'$6 target', data: priceSorted.map(() => targets.priceTarget), borderColor:'#B71C1C', borderDash:[6,4], pointRadius:0, fill:false },
+      ],
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'$'+v } } } },
+  });
+
+  // Sell-through chart
+  const mtSoldTotal = settled.reduce((a,c) => a + (c.mt.sold||0), 0);
+  const mtDroppedTotal = settled.reduce((a,c) => a + c.mt.dropped, 0);
+  const ltSoldTotal = settled.reduce((a,c) => a + (c.lt.sold||0), 0);
+  const ltDroppedTotal = settled.reduce((a,c) => a + c.lt.dropped, 0);
+  const mtPct = mtDroppedTotal > 0 ? mtSoldTotal/mtDroppedTotal : 0;
+  const ltPct = ltDroppedTotal > 0 ? ltSoldTotal/ltDroppedTotal : 0;
+  document.getElementById('sellThroughEmpty').style.display = settled.length ? 'none' : 'block';
+  if (sellThroughChartInstance) sellThroughChartInstance.destroy();
+  sellThroughChartInstance = new Chart(document.getElementById('sellThroughChart'), {
+    type: 'bar',
+    data: { labels: ['Milk Tea', 'Lemon Tea'], datasets: [{ data: [Math.round(mtPct*100), Math.round(ltPct*100)], backgroundColor:['#0A4F80','#C9933A'], borderRadius:4 }] },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ beginAtZero:true, max:100, ticks:{ callback:v=>v+'%' } } } },
+  });
+
+  // Cadence list
+  const cadenceList = document.getElementById('cadenceList');
+  document.getElementById('cadenceEmpty').style.display = settled.length ? 'none' : 'block';
+  cadenceList.innerHTML = settled.slice().sort((a,b)=> a.restockDate < b.restockDate ? 1 : -1).map(c => {
+    const weekBadge = c.mt.perWeek === null ? '<span class="badge neutral">n/a</span>'
+      : (c.mt.belowWeeklyTarget ? '<span class="badge warn">'+c.mt.perWeek.toFixed(1)+'/wk — below target</span>' : '<span class="badge good">'+c.mt.perWeek.toFixed(1)+'/wk — on target</span>');
+    const ltBadge = c.lt.supplied ? '<span class="badge good">LT supplied</span>' : '<span class="badge warn">LT not supplied</span>';
+    return '<div class="cadence-row"><div class="cadence-left"><b>'+c.restockDate+'</b>'+(c.partner?' &middot; '+c.partner:'')+'</div><div>'+weekBadge+' '+ltBadge+'</div></div>';
+  }).join('');
+
+  // Log list
+  const logList = document.getElementById('logList');
+  document.getElementById('logEmpty').style.display = sortedDesc.length ? 'none' : 'block';
+  logList.innerHTML = sortedDesc.map(c => {
+    const priceBadge = c.avgPriceRealized === null ? ''
+      : (c.belowPriceTarget ? '<span class="badge warn">'+fmtMoney(c.avgPriceRealized)+'/btl</span>' : '<span class="badge good">'+fmtMoney(c.avgPriceRealized)+'/btl</span>');
+    const paidBadge = c.paymentReceived === 'Y' ? '<span class="badge good">Paid</span>' : (c.paymentReceived === 'N' ? '<span class="badge warn">Unpaid</span>' : '<span class="badge neutral">'+(c.paymentReceived||'—')+'</span>');
+    return '<div class="cycle-row">'
+      + '<div class="cycle-main">'
+        + '<div class="cycle-partner">'+(c.partner||'—')+'</div>'
+        + '<div class="cycle-dates">'+c.restockDate+(c.settlementDate ? ' → '+c.settlementDate : ' (not settled)')+'</div>'
+        + (c.notes ? '<div class="cycle-notes">'+c.notes+'</div>' : '')
+      + '</div>'
+      + '<div class="cycle-stats">'
+        + '<div class="cycle-stat"><div class="cycle-stat-label">MT</div><div class="cycle-stat-val">'+c.mt.dropped+' → '+(c.mt.sold!==null?c.mt.sold+' sold':'—')+'</div></div>'
+        + '<div class="cycle-stat"><div class="cycle-stat-label">LT</div><div class="cycle-stat-val">'+(c.lt.supplied ? c.lt.dropped+' → '+(c.lt.sold!==null?c.lt.sold+' sold':'—') : 'none')+'</div></div>'
+        + '<div class="cycle-stat"><div class="cycle-stat-label">Revenue</div><div class="cycle-stat-val">'+fmtMoney(c.revenue.total)+'</div></div>'
+        + '<div class="cycle-stat"><div class="cycle-stat-label">Price</div><div class="cycle-stat-val">'+priceBadge+'</div></div>'
+        + '<div class="cycle-stat"><div class="cycle-stat-label">Payment</div><div class="cycle-stat-val">'+paidBadge+'</div></div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+async function fetchJsonWithRetry(url, attempts, delayMs) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      const text = await res.text();
+      try { return JSON.parse(text); }
+      catch (parseErr) { throw new Error('Backend returned a non-JSON response — likely a transient Apps Script/Sheets hiccup, not a real error.'); }
+    } catch (err) {
+      lastErr = err;
+      if (i < attempts - 1) {
+        document.getElementById('loadingState').textContent = 'Backend is slow — retrying (attempt ' + (i+2) + ' of ' + attempts + ')…';
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+  }
+  throw lastErr;
+}
+
+async function loadStore() {
+  const url = new URL(CONFIG.BACKEND_URL);
+  url.searchParams.set('action', 'getStoreSummary');
+  url.searchParams.set('key', CONFIG.API_KEY);
+
+  try {
+    const data = await fetchJsonWithRetry(url.toString(), 3, 2500);
+    if (!data.ok) throw new Error(data.error || 'Unknown error');
+    rawCycles = data.cycles || [];
+    targets = data.targets || targets;
+
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('storeContent').style.display = 'block';
+    renderPartnerFilter();
+    render();
+  } catch (e) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+    document.getElementById('errorState').innerHTML = '<div class="error-pill">Could not load store data. This can happen when the Apps Script backend is slow or briefly unavailable — try reloading. (' + (e.message||e) + ')</div>';
+  }
+}
+
+loadStore();
+</script>
+</body>
+</html>

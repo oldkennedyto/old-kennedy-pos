@@ -91,7 +91,7 @@
 <nav class="ok-nav" aria-label="Old Kennedy platform">
   <a class="ok-nav-item" href="index.html">Markets</a>
   <span class="ok-nav-item disabled">Pre-orders</span>
-  <span class="ok-nav-item disabled">Store</span>
+  <a class="ok-nav-item" href="store.html">Store</a>
   <span class="ok-nav-item disabled">Management</span>
   <a class="ok-nav-item active" href="dashboard.html">Dashboard</a>
 </nav>
@@ -335,26 +335,67 @@ function render() {
   }).join('');
 }
 
+// The Apps Script backend occasionally serves a transient Google-side
+// HTML error page instead of JSON, especially under concurrent load
+// against the same spreadsheet — response.json() then throws a
+// "Unexpected token '<'" parse error. This wraps a fetch with a few
+// retries so a one-off hiccup self-heals instead of surfacing to Albert
+// as a broken page.
+async function fetchJsonWithRetry(url, attempts, delayMs) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch (parseErr) {
+        throw new Error('Backend returned a non-JSON response — likely a transient Apps Script/Sheets hiccup, not a real error.');
+      }
+    } catch (err) {
+      lastErr = err;
+      if (i < attempts - 1) {
+        document.getElementById('loadingState').textContent = 'Backend is slow — retrying (attempt ' + (i+2) + ' of ' + attempts + ')…';
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+  }
+  throw lastErr;
+}
+
 async function loadDashboard() {
+  const dataUrl = new URL(CONFIG.BACKEND_URL);
+  dataUrl.searchParams.set('action', 'getDashboardData');
+  dataUrl.searchParams.set('key', CONFIG.API_KEY);
+
+  const summaryUrl = new URL(CONFIG.BACKEND_URL);
+  summaryUrl.searchParams.set('action', 'getDashboardSummary');
+  summaryUrl.searchParams.set('key', CONFIG.API_KEY);
+
   try {
-    const dataUrl = new URL(CONFIG.BACKEND_URL);
-    dataUrl.searchParams.set('action', 'getDashboardData');
-    dataUrl.searchParams.set('key', CONFIG.API_KEY);
-
-    const summaryUrl = new URL(CONFIG.BACKEND_URL);
-    summaryUrl.searchParams.set('action', 'getDashboardSummary');
-    summaryUrl.searchParams.set('key', CONFIG.API_KEY);
-
-    const [data, summary] = await Promise.all([
-      fetch(dataUrl.toString()).then(r=>r.json()),
-      fetch(summaryUrl.toString()).then(r=>r.json()),
-    ]);
+    // Fetched one at a time, not in parallel — two simultaneous requests
+    // against the same spreadsheet is what was tipping this into the
+    // transient-HTML-response problem above. Slower, but far more reliable.
+    const data = await fetchJsonWithRetry(dataUrl.toString(), 3, 2500);
     if (!data.ok) throw new Error(data.error || 'Unknown error');
     rawData = data;
 
+    document.getElementById('loadingState').textContent = 'Loading your data…';
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('dashboardContent').style.display = 'block';
+    render();
+  } catch (e) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+    document.getElementById('errorState').innerHTML = '<div class="error-pill">Could not load dashboard data. This can happen when the Apps Script backend is slow or briefly unavailable — try reloading. (' + (e.message||e) + ')</div>';
+    return;
+  }
 
+  // Business summary loads after the main content, and fails
+  // independently — a summary hiccup shouldn't block the rest of the
+  // dashboard, which is already visible by this point.
+  try {
+    const summary = await fetchJsonWithRetry(summaryUrl.toString(), 3, 2500);
     if (summary.ok) {
       renderSummary(summary.sections, summary.asOf);
     } else {
@@ -362,12 +403,10 @@ async function loadDashboard() {
       document.getElementById('summaryEmpty').style.display = 'block';
       document.getElementById('summaryEmpty').textContent = 'Could not load business summary: ' + (summary.error || 'unknown error');
     }
-
-    render();
   } catch (e) {
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('errorState').style.display = 'block';
-    document.getElementById('errorState').innerHTML = '<div class="error-pill">Could not load dashboard data. Check that BACKEND_URL is set correctly and matches Code.gs. (' + (e.message||e) + ')</div>';
+    document.getElementById('summaryGrid').innerHTML = '';
+    document.getElementById('summaryEmpty').style.display = 'block';
+    document.getElementById('summaryEmpty').textContent = 'Could not load business summary — backend was slow or unavailable. Try reloading the page.';
   }
 }
 
