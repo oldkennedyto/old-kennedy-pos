@@ -72,6 +72,20 @@
   .cadence-row:last-child { border-bottom:none; }
   .cadence-left { font-size:13px; color:var(--ink-mid); }
   .cadence-left b { color:var(--navy); }
+
+  .section-title-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+  .section-title-row .section-title { margin-bottom:0; }
+  .section-title-right { display:flex; align-items:center; gap:10px; }
+  .toggle-btn { padding:6px 12px; border:2px solid var(--border); background:var(--white); border-radius:8px; font-size:12px; font-weight:700; color:var(--ink-mid); cursor:pointer; white-space:nowrap; }
+  .toggle-btn:hover { border-color:var(--navy-mid); }
+
+  .stat-mini-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:12px; }
+  .stat-mini { background:var(--off-white); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; }
+  .stat-mini-label { font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-light); margin-bottom:6px; }
+  .stat-mini-val { font-size:20px; font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums; }
+  .stat-mini-val.flag-good { color:var(--success); }
+  .stat-mini-val.flag-warn { color:var(--warn-text); }
+  .stat-mini-sub { font-size:11px; color:var(--ink-light); margin-top:2px; }
 </style>
 </head>
 <body>
@@ -122,25 +136,38 @@
     </div>
 
     <div class="section">
-      <div class="section-title">Price realized per bottle, by cycle <span class="section-sub">— dashed line is your $6 target</span></div>
+      <div class="section-title">Price realized per bottle <span class="section-sub">— weighted by bottles actually sold, not a simple average of cycles</span></div>
       <div id="priceEmpty" class="empty-state" style="display:none;">No settled cycles yet.</div>
-      <div style="position:relative; width:100%; height:220px;"><canvas id="priceChart"></canvas></div>
+      <div class="stat-mini-grid" id="priceStatsGrid"></div>
     </div>
 
     <div class="section">
-      <div class="section-title">Sell-through by category <span class="section-sub">— bottles sold ÷ bottles supplied, across all settled cycles</span></div>
+      <div class="section-title">Sell-through by category <span class="section-sub">— % of bottles supplied that actually sold; higher means that product moves faster at this store, useful for deciding what to send more or less of</span></div>
       <div id="sellThroughEmpty" class="empty-state" style="display:none;">No settled cycles yet.</div>
       <div style="position:relative; width:100%; height:160px;"><canvas id="sellThroughChart"></canvas></div>
+      <div id="sellThroughCounts" style="margin-top:10px; font-size:12px; color:var(--ink-mid);"></div>
     </div>
 
     <div class="section">
-      <div class="section-title">Weekly supply cadence <span class="section-sub">— MT pace vs. your 8/week commitment; flags cycles you didn't supply LT</span></div>
+      <div class="section-title-row">
+        <div class="section-title">Weekly supply cadence <span class="section-sub">— MT pace vs. your 8/week commitment; flags cycles you didn't supply LT</span></div>
+        <div class="section-title-right">
+          <span class="section-sub" id="cadenceCount"></span>
+          <button class="toggle-btn" id="cadenceToggleBtn" onclick="toggleCadence()">Show all</button>
+        </div>
+      </div>
       <div id="cadenceEmpty" class="empty-state" style="display:none;">No cycles yet.</div>
       <div id="cadenceList"></div>
     </div>
 
     <div class="section">
-      <div class="section-title">Restock &amp; settlement log</div>
+      <div class="section-title-row">
+        <div class="section-title">Restock &amp; settlement log</div>
+        <div class="section-title-right">
+          <span class="section-sub" id="logCount"></span>
+          <button class="toggle-btn" id="logToggleBtn" onclick="toggleLog()">Show all</button>
+        </div>
+      </div>
       <div id="logEmpty" class="empty-state" style="display:none;">No restock cycles logged yet.</div>
       <div id="logList"></div>
     </div>
@@ -159,11 +186,38 @@ const CONFIG = {
 let rawCycles = [];
 let targets = { weeklyMtTarget: 8, priceTarget: 6 };
 let currentPartner = 'all';
-let priceChartInstance = null;
 let sellThroughChartInstance = null;
+let showAllCadence = false;
+let showAllLog = false;
+const RECENT_COUNT = 3;
 
 function fmtMoney(n) { return '$' + (Math.round(n*100)/100).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
 function fmtPct(n) { return Math.round(n*100) + '%'; }
+
+function toggleCadence() {
+  showAllCadence = !showAllCadence;
+  document.getElementById('cadenceToggleBtn').textContent = showAllCadence ? 'Show last '+RECENT_COUNT : 'Show all';
+  render();
+}
+function toggleLog() {
+  showAllLog = !showAllLog;
+  document.getElementById('logToggleBtn').textContent = showAllLog ? 'Show last '+RECENT_COUNT : 'Show all';
+  render();
+}
+
+// Weighted by bottles actually sold (total revenue ÷ total bottles), not an
+// average of each cycle's price — a 2-bottle cycle and a 16-bottle cycle
+// shouldn't count equally.
+function weightedAvgPrice(list) {
+  const revenue = list.reduce((a,c) => a + c.revenue.total, 0);
+  const bottles = list.reduce((a,c) => a + (c.mt.sold||0) + (c.lt.sold||0), 0);
+  return bottles > 0 ? revenue / bottles : null;
+}
+function priceStatCell(label, val) {
+  if (val === null) return '<div class="stat-mini"><div class="stat-mini-label">'+label+'</div><div class="stat-mini-val">–</div></div>';
+  const below = val < targets.priceTarget;
+  return '<div class="stat-mini"><div class="stat-mini-label">'+label+'</div><div class="stat-mini-val '+(below?'flag-warn':'flag-good')+'">'+fmtMoney(val)+'</div></div>';
+}
 
 function filteredCycles() {
   let rows = rawCycles;
@@ -256,21 +310,26 @@ function render() {
   document.getElementById('kpi-revenue').textContent = fmtMoney(totalRevenue);
   document.getElementById('kpi-revenue-sub').textContent = settled.length + ' settled cycle' + (settled.length===1?'':'s');
 
-  // Price chart
-  const priceSorted = settled.slice().sort((a,b) => a.restockDate < b.restockDate ? -1 : 1);
-  document.getElementById('priceEmpty').style.display = priceSorted.length ? 'none' : 'block';
-  if (priceChartInstance) priceChartInstance.destroy();
-  priceChartInstance = new Chart(document.getElementById('priceChart'), {
-    type: 'line',
-    data: {
-      labels: priceSorted.map(c => c.restockDate),
-      datasets: [
-        { label:'Avg price realized', data: priceSorted.map(c => c.avgPriceRealized), borderColor:'#023863', backgroundColor:'rgba(2,56,99,0.08)', fill:true, tension:0.3, pointRadius:4, pointBackgroundColor:'#C9933A' },
-        { label:'$6 target', data: priceSorted.map(() => targets.priceTarget), borderColor:'#B71C1C', borderDash:[6,4], pointRadius:0, fill:false },
-      ],
-    },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'$'+v } } } },
-  });
+  // Price realized — numeric only (target, last 3 cycles, this quarter, this year),
+  // each a weighted average so a couple of bottles don't skew equally with a
+  // full restock. Recent performance is what Albert cares about day to day;
+  // quarter/year give the longer-run read without a chart eating the page.
+  document.getElementById('priceEmpty').style.display = settled.length ? 'none' : 'block';
+  const now = new Date();
+  const curQuarter = Math.floor(now.getMonth()/3) + 1;
+  const curYear = now.getFullYear();
+  const cycleQuarter = ds => Math.floor(new Date(ds).getMonth()/3) + 1;
+  const cycleYear = ds => new Date(ds).getFullYear();
+
+  const last3Cycles = settled.slice().sort((a,b) => a.restockDate < b.restockDate ? 1 : -1).slice(0, RECENT_COUNT);
+  const qtdCycles = settled.filter(c => cycleYear(c.restockDate) === curYear && cycleQuarter(c.restockDate) === curQuarter);
+  const ytdCycles = settled.filter(c => cycleYear(c.restockDate) === curYear);
+
+  document.getElementById('priceStatsGrid').innerHTML =
+    '<div class="stat-mini"><div class="stat-mini-label">Target</div><div class="stat-mini-val">'+fmtMoney(targets.priceTarget)+'</div></div>'
+    + priceStatCell('Last '+RECENT_COUNT+' cycles', weightedAvgPrice(last3Cycles))
+    + priceStatCell('This quarter', weightedAvgPrice(qtdCycles))
+    + priceStatCell('This year', weightedAvgPrice(ytdCycles));
 
   // Sell-through chart
   const mtSoldTotal = settled.reduce((a,c) => a + (c.mt.sold||0), 0);
@@ -286,21 +345,28 @@ function render() {
     data: { labels: ['Milk Tea', 'Lemon Tea'], datasets: [{ data: [Math.round(mtPct*100), Math.round(ltPct*100)], backgroundColor:['#0A4F80','#C9933A'], borderRadius:4 }] },
     options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ beginAtZero:true, max:100, ticks:{ callback:v=>v+'%' } } } },
   });
+  document.getElementById('sellThroughCounts').textContent =
+    'Milk Tea: ' + mtSoldTotal + ' of ' + mtDroppedTotal + ' bottles sold (' + Math.round(mtPct*100) + '%)   ·   Lemon Tea: ' + ltSoldTotal + ' of ' + ltDroppedTotal + ' bottles sold (' + Math.round(ltPct*100) + '%)';
 
-  // Cadence list
+  // Cadence list — most recent first, collapsed to the last 3 cycles unless toggled open
+  const cadenceAll = settled.slice().sort((a,b)=> a.restockDate < b.restockDate ? 1 : -1);
+  const cadenceShown = showAllCadence ? cadenceAll : cadenceAll.slice(0, RECENT_COUNT);
+  document.getElementById('cadenceCount').textContent = showAllCadence ? '' : ('showing '+cadenceShown.length+' of '+cadenceAll.length);
   const cadenceList = document.getElementById('cadenceList');
-  document.getElementById('cadenceEmpty').style.display = settled.length ? 'none' : 'block';
-  cadenceList.innerHTML = settled.slice().sort((a,b)=> a.restockDate < b.restockDate ? 1 : -1).map(c => {
+  document.getElementById('cadenceEmpty').style.display = cadenceAll.length ? 'none' : 'block';
+  cadenceList.innerHTML = cadenceShown.map(c => {
     const weekBadge = c.mt.perWeek === null ? '<span class="badge neutral">n/a</span>'
       : (c.mt.belowWeeklyTarget ? '<span class="badge warn">'+c.mt.perWeek.toFixed(1)+'/wk — below target</span>' : '<span class="badge good">'+c.mt.perWeek.toFixed(1)+'/wk — on target</span>');
     const ltBadge = c.lt.supplied ? '<span class="badge good">LT supplied</span>' : '<span class="badge warn">LT not supplied</span>';
     return '<div class="cadence-row"><div class="cadence-left"><b>'+c.restockDate+'</b>'+(c.partner?' &middot; '+c.partner:'')+'</div><div>'+weekBadge+' '+ltBadge+'</div></div>';
   }).join('');
 
-  // Log list
+  // Log list — most recent first, collapsed to the last 3 cycles unless toggled open
+  const logShown = showAllLog ? sortedDesc : sortedDesc.slice(0, RECENT_COUNT);
+  document.getElementById('logCount').textContent = showAllLog ? '' : ('showing '+logShown.length+' of '+sortedDesc.length);
   const logList = document.getElementById('logList');
   document.getElementById('logEmpty').style.display = sortedDesc.length ? 'none' : 'block';
-  logList.innerHTML = sortedDesc.map(c => {
+  logList.innerHTML = logShown.map(c => {
     const priceBadge = c.avgPriceRealized === null ? ''
       : (c.belowPriceTarget ? '<span class="badge warn">'+fmtMoney(c.avgPriceRealized)+'/btl</span>' : '<span class="badge good">'+fmtMoney(c.avgPriceRealized)+'/btl</span>');
     const paidBadge = c.paymentReceived === 'Y' ? '<span class="badge good">Paid</span>' : (c.paymentReceived === 'N' ? '<span class="badge warn">Unpaid</span>' : '<span class="badge neutral">'+(c.paymentReceived||'—')+'</span>');
